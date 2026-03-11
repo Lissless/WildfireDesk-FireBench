@@ -1,4 +1,4 @@
-
+from build.lib.llmproxy import LLMProxy
 
 def main():
     pass
