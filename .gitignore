@@ -1,3 +1,4 @@
 .env
 .vscode
+eval/results/
 __pycache__
