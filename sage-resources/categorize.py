@@ -4,7 +4,7 @@ import os
 import json
 import html
 
-input_file = "Healthy-Democracy-Links.html"
+input_file = "Healthy-Democracy-Sample-Links.html"
 output_dir = "states_output"
 os.makedirs(output_dir, exist_ok=True)
 
