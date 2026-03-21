@@ -1,0 +1,22 @@
+[
+  {
+    "_id": "001",
+    "context": "A community group is discussing how to stop a large parking lot development that would replace a local park.\n\nMaria: We should organize a public protest in front of city hall. It will attract media attention.\n\nDavid: A protest might help, but we also need to work within the system. We should submit formal objections during the planning review process.\n\nLina: I agree with David. If we collect signatures and submit a petition, the city council might delay the vote.\n\nOmar: Media attention is still important. Maybe we could combine a petition with a press campaign.\n\nSara: We also need to involve nearby schools and parents who use the park. That could strengthen the campaign.",
+    "question": "What is the main collective strategy that best reflects the group’s discussion?",
+    "choice_A": "Focus only on organizing a large street protest",
+    "choice_B": "Combine institutional advocacy (petitions or objections) with public awareness actions",
+    "choice_C": "Avoid public engagement and negotiate privately with the developer",
+    "choice_D": "Wait until the construction begins before taking action",
+    "answer": "B"
+  },
+  {
+    "_id": "002",
+    "context": "Water freezes at 0 degrees Celsius under normal atmospheric pressure.",
+    "question": "At what temperature does water freeze?",
+    "choice_A": "100°C",
+    "choice_B": "50°C",
+    "choice_C": "0°C",
+    "choice_D": "-10°C",
+    "answer": "C"
+  }
+]
