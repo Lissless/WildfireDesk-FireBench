@@ -6,6 +6,7 @@ from tqdm import tqdm
 import re
 import time
 import numpy as np
+from collections import defaultdict
 agent = LLMProxy()
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 base_dir = os.path.dirname(__file__)
@@ -74,7 +75,7 @@ def get_pred(data, args, fout):
         item['context'] = context[:1000]
         fout.write(json.dumps(item, ensure_ascii=False) + '\n')
         fout.flush()
-def eval_pred(out_file,save_dir):
+def eval_pred(out_file, save_dir):
     prompt_path = os.path.join(base_dir, "results", out_file)
     data = []
     with open(prompt_path, "r", encoding='utf-8') as f:
@@ -82,19 +83,42 @@ def eval_pred(out_file,save_dir):
             data.append(json.loads(line))
 
     num_right = sum(1 for item in data if item.get("judge"))
+    overall_win_rate = np.round(num_right / len(data), 2) if data else 0.0
 
-    data = {
-        "win_rate": np.round((num_right/len(data)),2)
+    source_counts = defaultdict(lambda: {"correct": 0, "total": 0})
+    class_counts = defaultdict(lambda: {"correct": 0, "total": 0})
+
+    for item in data:
+        judge = item.get("judge", False)
+        source = item.get("source", "Unknown")
+        cls = item.get("class", "Unknown")
+
+        source_counts[source]["total"] += 1
+        source_counts[source]["correct"] += int(judge)
+
+        class_counts[cls]["total"] += 1
+        class_counts[cls]["correct"] += int(judge)
+
+    source_win_rate = {k: np.round(v["correct"] / v["total"], 2) if v["total"] > 0 else 0.0
+                       for k, v in source_counts.items()}
+    class_win_rate = {k: np.round(v["correct"] / v["total"], 2) if v["total"] > 0 else 0.0
+                      for k, v in class_counts.items()}
+
+    result = {
+        "overall_win_rate": overall_win_rate,
+        "source_win_rate": source_win_rate,
+        "class_win_rate": class_win_rate
     }
-    score_file = os.path.join(save_dir, f"{args.model}_{timestamp}_score.jsonl")
+
+    score_file = os.path.join(save_dir, f"{args.file}_{args.model}_{timestamp}_score.json")
     with open(score_file, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+        json.dump(result, f, indent=2)
 def main():
     save_dir = os.path.join(base_dir, "results")
     os.makedirs(save_dir, exist_ok=True)
     print(args)
-    out_file = os.path.join(save_dir, f"{args.model}_{timestamp}.jsonl")
-    prompt_path = os.path.join(base_dir, "data", "civic_group.json")
+    out_file = os.path.join(save_dir, f"{args.file}_{args.model}_{timestamp}.jsonl")
+    prompt_path = os.path.join(base_dir, "data", args.file + ".json")
     dataset = json.load(open(prompt_path, 'r', encoding='utf-8'))
     data_all = [{"_id": item["_id"], "context": item["context"], "question": item["question"], "choice_A": item["choice_A"], "choice_B": item["choice_B"], "choice_C": item["choice_C"], "choice_D": item["choice_D"], "answer": item["answer"]} for item in dataset]
 
@@ -116,5 +140,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", "-m", type=str, default="4o-mini", choices=["gpt-4.1-mini, gpt-5-mini, gpt-5-nano, 4o-mini, us.meta.llama4-maverick-17b-instruct-v1:0, us.meta.llama4-scout-17b-instruct-v1:0, us.meta.llama3-2-90b-instruct-v1:0, us.meta.llama3-3-70b-instruct-v1:0, us.meta.llama3-2-3b-instruct-v1:0, us.meta.llama3-2-1b-instruct-v1:0, us.meta.llama3-1-8b-instruct-v1:0, us.anthropic.claude-3-haiku-20240307-v1:0, google.gemma-3-4b-it, google.gemma-3-12b-it, google.gemma-3-27b-it, gemini-2.5-flash-lite"])
     parser.add_argument("--rag", "-r", type=bool, default=True)
+    parser.add_argument("--file", "-f", type=str, default="civic")
     args = parser.parse_args()
     main()
