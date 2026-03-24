@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WildfireDesk</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="app">
@@ -45,7 +46,6 @@
         const sourcesDiv = document.createElement("div");
         sourcesDiv.className = "sources";
 
-        // ALSO render sources as markdown (important!)
         if (typeof sources === "string") {
         sourcesDiv.innerHTML = marked.parse(sources);
         } else {

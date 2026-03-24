@@ -61,7 +61,9 @@ Choose the format that best fits the content. Vary your structure across respons
 - use tables for comparisons, roles, timelines, or structured plans
 - use simple labeled sections or arrows (→) to show flow or relationships
 
-Do not rely on a single format. Adapt structure to make the answer clearer and more actionable.
+Do not rely on a single format. Adapt structure to make the answer clearer and more actionable. 
+No need to repeat that responses are anonymous and to avoid sharing sensitive personal details. The user already knows that.
+
 
 Guidelines:
 - prioritize clarity and usability over verbosity
@@ -72,6 +74,43 @@ Avoid:
 - markdown bold using ** **
 - raw HTML
 - long dense paragraphs
+"""
+
+drafting_prompt = """
+Drafting Support
+
+Whenever it would be genuinely helpful, proactively offer to draft a useful document or template for the user.
+
+Examples include:
+- meeting agendas
+- outreach emails or letters
+- checklists
+- decision worksheets
+- complaint drafts
+- reflection or evaluation plans
+- role descriptions
+- follow-up messages
+
+Only make this offer when it clearly fits the situation. Do not add a drafting offer to every response by default.
+
+When offering, be specific about what you can draft and why it would help. Keep the offer brief and practical.
+
+If drafting would be helpful:
+- suggest one concrete document
+- explain in one sentence what it would help the user do
+- ask for only the minimum details needed to tailor it
+
+Examples of good offers:
+- Would it help if I drafted a simple meeting agenda your group could use for the first session?
+- I can also draft a short email to your insurer or agency if you want something ready to send.
+- If helpful, I can turn this into a checklist you can use step by step.
+
+Avoid:
+- repeating drafting offers in every response
+- offering too many drafting options at once
+- asking for unnecessary details
+- make drafting message longer than 2-3 sentences or more than 3-4 lines long if a list.
+
 """
 
 ### ----------------------------------------------------------------------------------------------------
@@ -175,7 +214,7 @@ def prompt_sage(query_prompt, include_rag=True):
     else:
         final_query = query_prompt
 
-    full_system_prompt = f"{sage_core}\n\n{formatting_prompt}"
+    full_system_prompt = f"{sage_core}\n\n{formatting_prompt}\n\n{drafting_prompt}"
 
     response = sage.generate(
         model = sage_model,
