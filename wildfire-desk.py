@@ -189,8 +189,8 @@ def get_source(file, rag_context):
 
     Use plain, non-academic language. Do not sound like a formal citation.
 
-    Then, underneath, include a section titled "MLA citations:" and provide brief MLA-style citations for the same sources.
-    Keep these concise and omit any missing information.
+    Then, underneath, include a section where you briefly provide MLA-style citations for the same sources.
+    Keep these concise. Include any information you have like date written, author, hyperlink, etc.
 
     Requirements:
     - The paragraph should be 2–3 sentences total
@@ -198,16 +198,9 @@ def get_source(file, rag_context):
     - MLA citations can be in a simple list format
     - Do not repeat explanations in the MLA section
 
-    Format:
-
-    [paragraph]
-
-    MLA citations:
-    1. ...
-    2. ...
-
     Return only this output.
     """
+    
     
     response, ctx = prompt_sage(citation_prompt)
     return response, ctx
