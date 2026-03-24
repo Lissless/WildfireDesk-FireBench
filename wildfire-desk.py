@@ -159,8 +159,39 @@ def get_source(file, rag_context):
 
     doc_summaries, number = parse_retrieve_rag_context(rag_context)
 
-    citation_prompt = f""" Give MLA format citations for each document referenced below:\n {doc_summaries}\n 
-    If you are not able to fill in a portion of the citation then omit it. Only return the top {number} relevant citation(s)."""
+    citation_prompt = f"""
+    You are generating a short 'Where this advice comes from' section for a user.
+
+    Documents:
+    {doc_summaries}
+
+    First, write a short paragraph (2–3 sentences total) that:
+    - explains what kinds of sources this advice draws from
+    - describes the perspective or approach these sources take
+    - clearly connects that perspective to the advice given
+
+    Use plain, non-academic language. Do not sound like a formal citation.
+
+    Then, underneath, include a section titled "MLA citations:" and provide brief MLA-style citations for the same sources.
+    Keep these concise and omit any missing information.
+
+    Requirements:
+    - The paragraph should be 2–3 sentences total
+    - No bullet points in the paragraph
+    - MLA citations can be in a simple list format
+    - Do not repeat explanations in the MLA section
+
+    Format:
+
+    [paragraph]
+
+    MLA citations:
+    1. ...
+    2. ...
+
+    Return only this output.
+    """
+    
     response, ctx = prompt_sage(citation_prompt)
     return response, ctx
     
