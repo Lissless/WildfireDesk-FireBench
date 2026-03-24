@@ -49,38 +49,48 @@ def extract_answer(response):
         else:
             return None
 
-def get_pred(data, args, fout):
+def get_pred(data, args, save_path):
     model_name = args.model
-    session_id_value = 'verify'+str(timestamp) # This would generate a different session every time it is prompted
+    session_id_value = 'verify' + str(timestamp)
     rag_enabled = args.rag
+
     system_instructions = (
-        """You are a helpdesk for grassroots activists and groups. Understand users' situations and answer their questions.
-        """
+        """You are a helpdesk for grassroots activists and groups. Understand users' situations and answer their questions."""
     )
+
+    results = [] 
+
     for item in tqdm(data):
         context = item['context']
 
         template = template_choose
-        prompt = template.replace('$DOC$', context.strip()).replace('$Q$', item['question'].strip()).replace('$C_A$', item['choice_A'].strip()).replace('$C_B$', item['choice_B'].strip()).replace('$C_C$', item['choice_C'].strip()).replace('$C_D$', item['choice_D'].strip())
+        prompt = template.replace('$DOC$', context.strip()) \
+                         .replace('$Q$', item['question'].strip()) \
+                         .replace('$C_A$', item['choice_A'].strip()) \
+                         .replace('$C_B$', item['choice_B'].strip()) \
+                         .replace('$C_C$', item['choice_C'].strip()) \
+                         .replace('$C_D$', item['choice_D'].strip())
 
-        output = query_llm(prompt, model_name,session_id_value,rag_enabled,system_instructions)
+        output = query_llm(prompt, model_name, session_id_value, rag_enabled, system_instructions)
 
         if output == '':
             continue
+
         response = output["result"].strip()
         item['response'] = response
         item['pred'] = extract_answer(response)
         item['judge'] = item['pred'] == item['answer']
         item['rag_context'] = output["rag_context"]
         item['context'] = context[:1000]
-        fout.write(json.dumps(item, ensure_ascii=False) + '\n')
-        fout.flush()
+
+        results.append(item) 
+    with open(save_path, "w", encoding="utf-8") as f:
+        json.dump(results, f, ensure_ascii=False, indent=2)
 def eval_pred(out_file, save_dir):
     prompt_path = os.path.join(base_dir, "results", out_file)
-    data = []
-    with open(prompt_path, "r", encoding='utf-8') as f:
-        for line in f:
-            data.append(json.loads(line))
+
+    with open(prompt_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
 
     num_right = sum(1 for item in data if item.get("judge"))
     overall_win_rate = np.round(num_right / len(data), 2) if data else 0.0
@@ -120,20 +130,19 @@ def main():
     out_file = os.path.join(save_dir, f"{args.file}_{args.model}_{timestamp}.jsonl")
     prompt_path = os.path.join(base_dir, "data", args.file + ".json")
     dataset = json.load(open(prompt_path, 'r', encoding='utf-8'))
-    data_all = [{"_id": item["_id"], "context": item["context"], "question": item["question"], "choice_A": item["choice_A"], "choice_B": item["choice_B"], "choice_C": item["choice_C"], "choice_D": item["choice_D"], "answer": item["answer"]} for item in dataset]
+    data_all = [{"_id": item["_id"], "context": item["context"], "question": item["question"], "choice_A": item["choice_A"], "choice_B": item["choice_B"], "choice_C": item["choice_C"], "choice_D": item["choice_D"], "answer": item["answer"], "source": item["source"], "class": item["class"]} for item in dataset]
 
     # cache
     has_data = {}
     if os.path.exists(out_file):
         with open(out_file, encoding='utf-8') as f:
             has_data = {json.loads(line)["_id"]: 0 for line in f}
-    fout = open(out_file, 'a', encoding='utf-8')
     data = []
     for item in data_all:
         if item["_id"] not in has_data:
             data.append(item)
 
-    get_pred(data, args, fout)
+    get_pred(data, args, out_file)
     eval_pred(out_file,save_dir)
 
 if __name__ == '__main__':
