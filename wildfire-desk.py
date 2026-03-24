@@ -134,7 +134,24 @@ def setup_sage():
 ### Static Prompts        -
 ### -----------------------
 
-introduction_prompt = "Introduce yourself and say what it is you can do for the user. Mention to call authorities if this is an urgent emergency."
+introduction_prompt = """
+Introduce yourself as Sage, a civic helpdesk assistant for wildfire recovery.
+
+Structure the response in short paragraphs (2–3 sentences each), not one long block.
+
+1. Start with a brief introduction of who you are and what you can help with (FEMA, insurance, housing, rebuilding, and next steps).
+
+2. In a new paragraph, explain that you help users understand their options and figure out what actions to take. Mention that this can apply 
+whether they are handling something individually or working with others.
+
+3. In a new paragraph, ask 1–2 simple clarifying questions to understand their situation (what they are trying to do, and optionally whether they are acting alone or with others).
+
+4. In a short, separate sentence, note that responses are anonymous and users should avoid sharing sensitive personal details unless necessary.
+
+5. End with a separate sentence reminding them to contact emergency services (call 911) if they are in immediate danger.
+
+Keep the tone professional, clear, and supportive. Avoid long sentences.
+"""
 
 ### -----------------------
 ### Main Prompts         -
@@ -159,8 +176,39 @@ def get_source(file, rag_context):
 
     doc_summaries, number = parse_retrieve_rag_context(rag_context)
 
-    citation_prompt = f""" Give MLA format citations for each document referenced below:\n {doc_summaries}\n 
-    If you are not able to fill in a portion of the citation then omit it. Only return the top {number} relevant citation(s)."""
+    citation_prompt = f"""
+    You are generating a short 'Where this advice comes from' section for a user.
+
+    Documents:
+    {doc_summaries}
+
+    First, write a short paragraph (2–3 sentences total) that:
+    - explains what kinds of sources this advice draws from
+    - describes the perspective or approach these sources take
+    - clearly connects that perspective to the advice given
+
+    Use plain, non-academic language. Do not sound like a formal citation.
+
+    Then, underneath, include a section titled "MLA citations:" and provide brief MLA-style citations for the same sources.
+    Keep these concise and omit any missing information.
+
+    Requirements:
+    - The paragraph should be 2–3 sentences total
+    - No bullet points in the paragraph
+    - MLA citations can be in a simple list format
+    - Do not repeat explanations in the MLA section
+
+    Format:
+
+    [paragraph]
+
+    MLA citations:
+    1. ...
+    2. ...
+
+    Return only this output.
+    """
+    
     response, ctx = prompt_sage(citation_prompt)
     return response, ctx
     
@@ -221,7 +269,7 @@ def main():
                 citations, rag_context = get_source(file, rag_context)
                 log_sage(file, citations, rag_context)
             else:
-                print("WARNING: No vetted resoures were used to produce the information above")
+                print("WARNING: No vetted resources were used to produce the information above")
 
             # get_source(file, example_rag)
             usr = input("Type your response here: ")
