@@ -53,8 +53,6 @@ sage_RAG_id = "sage_rag"+str(timestamp)
 sage_rag_t = 0.4 # subject to change
 sage_rag_k = 5 # top number of chunks to fetch to use for rag, lets see if we need to set this
 
-example_rag = ""
-
 def upload_to_sage(filepath):
     response = sage.upload_file(
         file_path = filepath,
@@ -215,9 +213,6 @@ def main():
         log_sage(file, resp, "")
         usr = input("Type your response here: ")
         # log_user(file, usr)
-        with open("sage-resources/example-rag.txt") as f:
-            global example_rag
-            example_rag = f.read()
         while usr != "quit":
             resp, rag_context = prompt_sage(usr)
             log_sage(file, resp, rag_context)
