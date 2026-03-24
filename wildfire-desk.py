@@ -64,7 +64,6 @@ Choose the format that best fits the content. Vary your structure across respons
 Do not rely on a single format. Adapt structure to make the answer clearer and more actionable. 
 No need to repeat that responses are anonymous and to avoid sharing sensitive personal details. The user already knows that.
 
-
 Guidelines:
 - prioritize clarity and usability over verbosity
 - prefer structured layouts over long paragraphs
