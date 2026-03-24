@@ -163,6 +163,7 @@ def upload_to_sage(filepath):
     time.sleep(3)
     if "result" not in response:
         print("Resource upload error\n")
+        print("Full response:", response)
         return False
     resp_message = response["result"]
     if verbose:
@@ -263,7 +264,7 @@ def get_source(rag_context):
     Use plain, non-academic language. Do not sound like a formal citation.
 
     Then, underneath, include a section where you briefly provide MLA-style citations for the same sources.
-    Keep these concise and omit any missing information.
+    Keep these concise. Include any information you have like date written, author, hyperlink, etc.
 
     Requirements:
     - The paragraph should be 2–3 sentences total
