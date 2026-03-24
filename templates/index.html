@@ -39,7 +39,7 @@
     const wrapper = document.createElement("div");
     wrapper.className = `message ${sender}`;
 
-    // Render markdown properly
+    // render markdown properly
     wrapper.innerHTML = marked.parse(text);
 
     if (sources) {
@@ -48,6 +48,7 @@
 
         if (typeof sources === "string") {
         sourcesDiv.innerHTML = marked.parse(sources);
+
         } else {
         sourcesDiv.textContent = JSON.stringify(sources, null, 2);
         }

@@ -246,9 +246,9 @@ def get_source(rag_context):
     Otherwise, make sure your answer follows the format: **[Document Name]**\n - [Summary]\n - [Key sections referenced]
     """
     
-    response, _ = prompt_sage(source_prompt) # TODO: Test if this is needed, this prompt primes the next one
+    # response, _ = prompt_sage(source_prompt) # Commented out and seems to be fixing the double citation problem, but tbh who knows
 
-    doc_summaries, number = parse_retrieve_rag_context(rag_context)
+    doc_summaries = parse_retrieve_rag_context(rag_context)
 
     citation_prompt = f"""
     You are generating a short 'Where this advice comes from' section for a user.
@@ -264,29 +264,44 @@ def get_source(rag_context):
     Use plain, non-academic language. Do not sound like a formal citation.
 
     Then, underneath, include a section where you briefly provide MLA-style citations for the same sources.
-    Keep these concise. Include any information you have like date written, author, hyperlink, etc.
+    Keep these concise. Include any information you have such as author, title, date, publisher, or hyperlink.
+
+    When constructing citations:
+    - Include all relevant details when they are clearly available
+    - If any information is missing, omit it cleanly
+    - Do not insert placeholders such as "[No date available]"
+    - Do not guess or fabricate missing details
+    - Ensure each citation still reads naturally even if some fields are missing
 
     Requirements:
     - The paragraph should be 2–3 sentences total
     - No bullet points in the paragraph
-    - MLA citations can be in a simple list format
+    - MLA citations should be in a simple numbered list format
     - Do not repeat explanations in the MLA section
 
     Return only this output.
-    """
-    
+    """    
     response, _ = prompt_sage(citation_prompt)
     return response["result"]
     
 def chat_with_sage(user_message):
     response, rag_context = prompt_sage(user_message)
+    answer = response["result"]
 
     sources = None
     if len(rag_context) > 0:
         sources = get_source(rag_context)
+    else:
+        warning = (
+            "Note: This answer is based on general knowledge and may not reflect "
+            "specific local policies or up-to-date recovery information. "
+            "You may want to verify details with local agencies."
+        )
+        answer = f"{answer}\n\n---\n{warning}"
+
 
     return {
-        "answer": response["result"],
+        "answer": answer,
         "sources": sources,
         "used_rag": len(rag_context) > 0,
         "rag_context": rag_context
