@@ -27,6 +27,7 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script>
     const chat = document.getElementById("chat");
     const userInput = document.getElementById("user-input");
@@ -34,19 +35,28 @@
     const introMessage = document.getElementById("intro-message");
 
     function addMessage(text, sender, sources = null) {
-      const wrapper = document.createElement("div");
-      wrapper.className = `message ${sender}`;
-      wrapper.textContent = text;
+    const wrapper = document.createElement("div");
+    wrapper.className = `message ${sender}`;
 
-      if (sources) {
+    // Render markdown properly
+    wrapper.innerHTML = marked.parse(text);
+
+    if (sources) {
         const sourcesDiv = document.createElement("div");
         sourcesDiv.className = "sources";
-        sourcesDiv.textContent = sources;
-        wrapper.appendChild(sourcesDiv);
-      }
 
-      chat.appendChild(wrapper);
-      chat.scrollTop = chat.scrollHeight;
+        // ALSO render sources as markdown (important!)
+        if (typeof sources === "string") {
+        sourcesDiv.innerHTML = marked.parse(sources);
+        } else {
+        sourcesDiv.textContent = JSON.stringify(sources, null, 2);
+        }
+
+        wrapper.appendChild(sourcesDiv);
+    }
+
+    chat.appendChild(wrapper);
+    chat.scrollTop = chat.scrollHeight;
     }
 
     async function loadIntro() {

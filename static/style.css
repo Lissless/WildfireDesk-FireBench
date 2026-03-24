@@ -10,9 +10,8 @@ body {
   margin: 0 auto;
   height: 100vh;
   display: flex;
-  flex-direction: column; /* stacks children vertically */
+  flex-direction: column;
 }
-
 .header {
   padding: 20px 24px;
   background: #fff;
@@ -35,36 +34,35 @@ body {
   overflow-y: auto;
   padding: 24px;
   display: flex;
-  flex-direction: column; /* stacks children vertically */
-  gap: 16px;
+  flex-direction: column;
+  gap: 12px;
 }
-
 .message {
   max-width: 75%;
-  padding: 14px 16px;
+  padding: 14px 18px;
   border-radius: 16px;
   line-height: 1.5;
-  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
 .message.user {
-  align-self: flex-end; /* user message on right */
-  background: #4d5d53;
+  align-self: flex-end;
+  background: #4f6355;
   color: white;
 }
 
 .message.sage {
-  align-self: flex-start; /* sage message on right */ 
+  align-self: flex-start;
   background: white;
   border: 1px solid #ddd;
 }
 
 .sources {
-  margin-top: 8px;
+  margin-top: 10px;
   font-size: 14px;
   color: #444;
   background: #fafafa;
-  border-left: 3px solid #4d5d53;
+  border-left: 3px solid #4f6355;
   padding: 10px 12px;
   border-radius: 8px;
 }
@@ -103,4 +101,42 @@ body {
 .loading {
   color: #666;
   font-style: italic;
+}
+
+.message h1,
+.message h2,
+.message h3 {
+  margin: 8px 0 4px;
+  line-height: 1.3;
+}
+
+.message p {
+  margin: 12px 0;
+}
+
+.message ul,
+.message ol {
+  margin: 6px 0 6px 20px;
+  padding: 0;
+}
+
+.message li {
+  margin: 4px 0;
+}
+
+.message table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 8px 0;
+}
+
+.message th,
+.message td {
+  border: 1px solid #ddd;
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.message th {
+  background: #f3f3f3;
 }

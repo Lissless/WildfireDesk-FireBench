@@ -50,6 +50,30 @@ whether they are handling something individually or working with others. Also me
 Keep the tone professional, clear, and supportive. Avoid long sentences.
 """
 
+formatting_prompt = """
+Response Formatting
+
+Write responses in a structured, easy-to-scan format for a web interface.
+
+Choose the format that best fits the content. Vary your structure across responses:
+- use numbered steps for processes
+- use bullet points for recommendations or checklists
+- use tables for comparisons, roles, timelines, or structured plans
+- use simple labeled sections or arrows (→) to show flow or relationships
+
+Do not rely on a single format. Adapt structure to make the answer clearer and more actionable.
+
+Guidelines:
+- prioritize clarity and usability over verbosity
+- prefer structured layouts over long paragraphs
+- keep spacing and formatting clean and consistent
+
+Avoid:
+- markdown bold using ** **
+- raw HTML
+- long dense paragraphs
+"""
+
 ### ----------------------------------------------------------------------------------------------------
 ### Helpers        -
 ### ----------------------------------------------------------------------------------------------------
@@ -89,7 +113,7 @@ def parse_retrieve_rag_context(rag_ctx):
     return summaries, index
 
 ### ----------------------------------------------------------------------------------------------------
-### Helpers        -
+### Sage Setup        -
 ### ----------------------------------------------------------------------------------------------------
 
 def upload_to_sage(filepath):
@@ -151,9 +175,11 @@ def prompt_sage(query_prompt, include_rag=True):
     else:
         final_query = query_prompt
 
+    full_system_prompt = f"{sage_core}\n\n{formatting_prompt}"
+
     response = sage.generate(
         model = sage_model,
-        system = sage_core,
+        system = full_system_prompt,
         query = final_query,
         temperature = sage_temperature,
         session_id = sage_session_id,
