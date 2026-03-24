@@ -183,7 +183,7 @@ def get_source(rag_context):
     
     response, _ = prompt_sage(source_prompt) # TODO: Test if this is needed, this prompt primes the next one
 
-    doc_summaries = parse_retrieve_rag_context(rag_context)
+    doc_summaries, number = parse_retrieve_rag_context(rag_context)
 
     citation_prompt = f"""
     You are generating a short 'Where this advice comes from' section for a user.
@@ -210,8 +210,8 @@ def get_source(rag_context):
     Return only this output.
     """
     
-    response, ctx = prompt_sage(citation_prompt)
-    return response, ctx
+    response, _ = prompt_sage(citation_prompt)
+    return response["result"]
     
 def chat_with_sage(user_message):
     response, rag_context = prompt_sage(user_message)
