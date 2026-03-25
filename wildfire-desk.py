@@ -28,6 +28,7 @@ sage_session_id = "sage"+str(timestamp) # subject to change --> may need to save
 sage_RAG_id = "sage_rag2"#+str(timestamp)
 sage_rag_t = 0.4 # subject to change
 sage_rag_k = 5 # top number of chunks to fetch to use for rag, lets see if we need to set this
+sage_lastk = 10
 
 ### ----------------------------------------------------------------------------------------------------
 ### Static Prompts        -
@@ -237,7 +238,7 @@ def prompt_sage(query_prompt, include_rag=True):
         query = final_query,
         temperature = sage_temperature,
         session_id = sage_session_id,
-        lastk=3, # the citation proccess usually take three prompts, unsure if this is helpful
+        lastk=sage_lastk, # the citation proccess usually take three prompts, unsure if this is helpful
     )
 
     return response, rag_context
