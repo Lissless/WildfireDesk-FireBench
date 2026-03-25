@@ -12,7 +12,9 @@ from pathlib import Path
 timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 verbose = True
 display_rag = 0
-chatbot_resources_directory = "sage-resources/democracy-chatbot-resources"
+chatbot_democracy_resources_directory = "sage-resources/democracy-chatbot-resources"
+chatbot_wildfire_resources_directory = "sage-resources/wildfire-resources"
+upload_resources = False
 
 ### ----------------------------------------------------------------------------------------------------
 ### Sage Settings        -
@@ -23,7 +25,7 @@ sage_core = "" # to be uploaded upon setup
 sage_model = '4o-mini' # subject to change
 sage_temperature = 0.6 # subject to change
 sage_session_id = "sage"+str(timestamp) # subject to change --> may need to save
-sage_RAG_id = "sage_rag"+str(timestamp)
+sage_RAG_id = "sage_rag2"#+str(timestamp)
 sage_rag_t = 0.4 # subject to change
 sage_rag_k = 5 # top number of chunks to fetch to use for rag, lets see if we need to set this
 
@@ -166,24 +168,37 @@ def upload_to_sage(filepath):
         print("Full response:", response)
         return False
     resp_message = response["result"]
-    if verbose:
+    if verbose and display_rag > 0:
+        fileparts = str(filepath).split("/")
+        name = fileparts[len(fileparts) - 1]
+        print("Upload Status: " + resp_message + ", Filename: " + name)
+    elif verbose:
         print("Upload Status: " + resp_message)
     return resp_message == "success"
 
-# upload and store the string contents of the tone 
-# if not upload_to_sage("sage-resources/question-types.pdf"):
-#     return False (if this wasn't successful)
-def setup_sage():
-    p = Path(chatbot_resources_directory)
 
-    for dir in p.iterdir():
-        if dir.is_dir():
-            for file in dir.iterdir():
+def upload_2d_directory(filepath_str):
+    p = Path(filepath_str)
+    for data in p.iterdir():
+        if data.is_dir():
+            for file in data.iterdir():
                 # print("Name: ", file.name, "Relative: ", file.relative_to("."), "\n")
                 if not upload_to_sage(file.relative_to(".")):
                     print(f"""File: {file.name} - failed to upload\n""")
                     return False
-            # print(f.read_text())
+        elif data.is_file():
+            if not upload_to_sage(data.relative_to(".")):
+                    print(f"""File: {data.name} - failed to upload\n""")
+                    return False
+    return True
+
+
+def setup_sage():
+    if upload_resources:
+        if not upload_2d_directory(chatbot_democracy_resources_directory):
+            return False
+        if not upload_2d_directory(chatbot_wildfire_resources_directory):
+            return False
     try:
         with open("sage-resources/sage-tone.txt") as f:
             global sage_core
@@ -373,7 +388,7 @@ def run_cli():
 
             # Show sources if they exist
             if result["sources"]:
-                print("\nCitations:\n")
+                print("\nCitation Summary:\n")
                 log_sage(file, result["sources"], "")
             else:
                 print("WARNING: No vetted resources were used to produce the information above")
