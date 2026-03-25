@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WildfireDesk</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <h1>WildfireDesk</h1>
+      <p>Ask Sage about wildfire recovery, next steps, or community action.</p>
+    </div>
+
+    <div id="chat" class="chat-container">
+      <div class="message sage loading" id="intro-message">Loading Sage...</div>
+    </div>
+
+    <div class="input-area">
+      <input
+        id="user-input"
+        type="text"
+        placeholder="Type your question here..."
+      />
+      <button id="send-button">Send</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    const chat = document.getElementById("chat");
+    const userInput = document.getElementById("user-input");
+    const sendButton = document.getElementById("send-button");
+    const introMessage = document.getElementById("intro-message");
+
+    function addMessage(text, sender, sources = null) {
+    const wrapper = document.createElement("div");
+    wrapper.className = `message ${sender}`;
+
+    // render markdown properly
+    wrapper.innerHTML = marked.parse(text);
+
+    if (sources) {
+        const sourcesDiv = document.createElement("div");
+        sourcesDiv.className = "sources";
+
+        if (typeof sources === "string") {
+        sourcesDiv.innerHTML = marked.parse(sources);
+
+        } else {
+        sourcesDiv.textContent = JSON.stringify(sources, null, 2);
+        }
+
+        wrapper.appendChild(sourcesDiv);
+    }
+
+    chat.appendChild(wrapper);
+    chat.scrollTop = chat.scrollHeight;
+    }
+
+    async function loadIntro() {
+      try {
+        const response = await fetch("/intro");
+        const data = await response.json();
+        introMessage.remove();
+        addMessage(data.intro, "sage");
+      } catch (error) {
+        introMessage.textContent = "Could not load Sage.";
+      }
+    }
+
+    async function sendMessage() {
+      const message = userInput.value.trim();
+      if (!message) return;
+
+      addMessage(message, "user");
+      userInput.value = "";
+
+      const loading = document.createElement("div");
+      loading.className = "message sage loading";
+      loading.textContent = "Sage is thinking...";
+      chat.appendChild(loading);
+      chat.scrollTop = chat.scrollHeight;
+
+      try {
+        const response = await fetch("/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ message })
+        });
+
+        const data = await response.json();
+        loading.remove();
+
+        if (data.error) {
+          addMessage(data.error, "sage");
+          return;
+        }
+
+        addMessage(data.answer, "sage", data.sources);
+      } catch (error) {
+        loading.remove();
+        addMessage("Something went wrong while contacting Sage.", "sage");
+      }
+    }
+
+    sendButton.addEventListener("click", sendMessage);
+
+    userInput.addEventListener("keypress", function(event) {
+      if (event.key === "Enter") {
+        sendMessage();
+      }
+    });
+
+    loadIntro();
+  </script>
+</body>
+</html>
