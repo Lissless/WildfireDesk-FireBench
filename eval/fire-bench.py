@@ -7,26 +7,35 @@ import re
 import time
 import numpy as np
 from collections import defaultdict
+from wildfire_desk import prompt_sage
 agent = LLMProxy()
-timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 base_dir = os.path.dirname(__file__)
 prompt_path = os.path.join(base_dir, "prompts", "prompt_choose.txt")
 template_choose = open(prompt_path, encoding="utf-8").read()
+### ----------------------
+### System Settings        -
+### ----------------------
 
-def query_llm(query_prompt, model_name,session_id_value,rag_enabled,system_instructions):
+timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+verbose = True
+display_rag = True
+
+### ----------------------
+### Sage Settings        -
+### ----------------------
+sage = LLMProxy()
+sage_core = "" # to be uploaded upon setup
+sage_model = '4o-mini' # subject to change
+sage_temperature = 0.6 # subject to change
+sage_session_id = "sage"+str(timestamp) # subject to change --> may need to save
+sage_rag_t = 0.4 # subject to change
+sage_rag_k = 5 # top number of documents to fetch to use for rag, lets see if we need to set this
+def query_llm(query_prompt):
     tries = 0
     while tries < 5:
         tries += 1
         try:
-            response = agent.generate(
-                model = model_name,
-                system = system_instructions,
-                query = query_prompt,
-                temperature = 0,
-                lastk = 0, # Question, does verifyer need to rememmber anything?
-                session_id = session_id_value,
-                rag_usage = rag_enabled,
-            )
+            response = prompt_sage(query_prompt)
             return response
         except KeyboardInterrupt as e:
             raise e
@@ -71,7 +80,7 @@ def get_pred(data, args, save_path):
                          .replace('$C_C$', item['choice_C'].strip()) \
                          .replace('$C_D$', item['choice_D'].strip())
 
-        output = query_llm(prompt, model_name, session_id_value, rag_enabled, system_instructions)
+        output = query_llm(prompt)
 
         if output == '':
             continue
