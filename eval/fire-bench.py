@@ -7,7 +7,7 @@ import re
 import time
 import numpy as np
 from collections import defaultdict
-from wildfire_desk import prompt_sage
+from wildfire_desk import prompt_sage, sage_model
 agent = LLMProxy()
 base_dir = os.path.dirname(__file__)
 prompt_path = os.path.join(base_dir, "prompts", "prompt_choose.txt")
@@ -25,7 +25,7 @@ display_rag = True
 ### ----------------------
 sage = LLMProxy()
 sage_core = "" # to be uploaded upon setup
-sage_model = '4o-mini' # subject to change
+sage_model = sage_model # subject to change
 sage_temperature = 0.6 # subject to change
 sage_session_id = "sage"+str(timestamp) # subject to change --> may need to save
 sage_rag_t = 0.4 # subject to change
