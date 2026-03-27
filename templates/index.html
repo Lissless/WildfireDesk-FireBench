@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WildfireDesk</title>
+
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
@@ -19,11 +20,7 @@
     </div>
 
     <div class="input-area">
-      <input
-        id="user-input"
-        type="text"
-        placeholder="Type your question here..."
-      />
+      <input id="user-input" type="text" placeholder="Type your question here..." />
       <button id="send-button">Send</button>
     </div>
   </div>
@@ -35,29 +32,153 @@
     const sendButton = document.getElementById("send-button");
     const introMessage = document.getElementById("intro-message");
 
-    function addMessage(text, sender, sources = null) {
-    const wrapper = document.createElement("div");
-    wrapper.className = `message ${sender}`;
+    function downloadWordDoc(filename, htmlContent) {
+      const fullHtml = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office"
+              xmlns:w="urn:schemas-microsoft-com:office:word"
+              xmlns="http://www.w3.org/TR/REC-html40">
+          <head>
+            <meta charset="utf-8">
+            <title>${filename}</title>
+          </head>
+          <body>
+            ${htmlContent}
+          </body>
+        </html>
+      `;
 
-    // render markdown properly
-    wrapper.innerHTML = marked.parse(text);
+      const blob = new Blob(['\ufeff', fullHtml], { type: 'application/msword' });
+      const url = URL.createObjectURL(blob);
 
-    if (sources) {
-        const sourcesDiv = document.createElement("div");
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      URL.revokeObjectURL(url);
+    }
+
+    function addMessage(text, sender, sources = null, showActions = true) {
+      const wrapper = document.createElement("div");
+      wrapper.className = `message ${sender}`;
+
+      const contentDiv = document.createElement("div");
+      contentDiv.className = "message-content";
+      contentDiv.innerHTML = marked.parse(text);
+
+      wrapper.appendChild(contentDiv);
+
+      let sourcesDiv = null;
+
+      if (sources) {
+        sourcesDiv = document.createElement("div");
         sourcesDiv.className = "sources";
 
         if (typeof sources === "string") {
-        sourcesDiv.innerHTML = marked.parse(sources);
-
+          sourcesDiv.innerHTML = marked.parse(sources);
         } else {
-        sourcesDiv.textContent = JSON.stringify(sources, null, 2);
+          sourcesDiv.textContent = JSON.stringify(sources, null, 2);
         }
 
         wrapper.appendChild(sourcesDiv);
-    }
+      }
 
-    chat.appendChild(wrapper);
-    chat.scrollTop = chat.scrollHeight;
+      if (sender === "sage" && showActions) {
+        const actions = document.createElement("div");
+        actions.className = "message-actions";
+
+        const copyBtn = document.createElement("button");
+        copyBtn.className = "action-button";
+        copyBtn.innerHTML = "📋 Copy";
+
+        const editBtn = document.createElement("button");
+        editBtn.className = "action-button";
+        editBtn.innerHTML = "✏️ Edit";
+
+        const downloadBtn = document.createElement("button");
+        downloadBtn.className = "action-button";
+        downloadBtn.innerHTML = "💾 Download";
+
+        let isEditing = false;
+        let textarea = null;
+        let originalText = text;
+
+        copyBtn.onclick = async () => {
+          await navigator.clipboard.writeText(contentDiv.innerText);
+          copyBtn.innerHTML = "✅ Copied";
+          setTimeout(() => {
+            copyBtn.innerHTML = "📋 Copy";
+          }, 1500);
+        };
+
+        editBtn.onclick = () => {
+          if (!isEditing) {
+            isEditing = true;
+
+            textarea = document.createElement("textarea");
+            textarea.className = "message-editor";
+            textarea.value = originalText;
+
+            wrapper.replaceChild(textarea, contentDiv);
+            wrapper.classList.add("editing");
+
+            editBtn.innerHTML = "✅ Save";
+
+            const cancelBtn = document.createElement("button");
+            cancelBtn.className = "action-button cancel-button";
+            cancelBtn.innerHTML = "↩ Cancel";
+            cancelBtn.dataset.role = "cancel";
+
+            cancelBtn.onclick = () => {
+              isEditing = false;
+              contentDiv.innerHTML = marked.parse(originalText);
+              wrapper.replaceChild(contentDiv, textarea);
+              wrapper.classList.remove("editing");
+              editBtn.innerHTML = "✏️ Edit";
+              cancelBtn.remove();
+            };
+
+            actions.appendChild(cancelBtn);
+
+          } else {
+            isEditing = false;
+            originalText = textarea.value;
+
+            contentDiv.innerHTML = marked.parse(originalText);
+
+            wrapper.replaceChild(contentDiv, textarea);
+            wrapper.classList.remove("editing");
+
+            editBtn.innerHTML = "✏️ Edit";
+
+            const cancelBtn = actions.querySelector('[data-role="cancel"]');
+            if (cancelBtn) cancelBtn.remove();
+          }
+        };
+
+        downloadBtn.onclick = () => {
+          const temp = document.createElement("div");
+          temp.innerHTML = contentDiv.innerHTML;
+
+          if (sourcesDiv) {
+            temp.appendChild(document.createElement("hr"));
+            temp.appendChild(sourcesDiv.cloneNode(true));
+          }
+
+          downloadWordDoc("sage-response.doc", temp.innerHTML);
+        };
+
+        actions.appendChild(copyBtn);
+        actions.appendChild(editBtn);
+        actions.appendChild(downloadBtn);
+
+        wrapper.appendChild(actions);
+      }
+
+      chat.appendChild(wrapper);
+      chat.scrollTop = chat.scrollHeight;
     }
 
     async function loadIntro() {
@@ -65,8 +186,8 @@
         const response = await fetch("/intro");
         const data = await response.json();
         introMessage.remove();
-        addMessage(data.intro, "sage");
-      } catch (error) {
+        addMessage(data.intro, "sage", null, false);
+      } catch {
         introMessage.textContent = "Could not load Sage.";
       }
     }
@@ -82,14 +203,11 @@
       loading.className = "message sage loading";
       loading.textContent = "Sage is thinking...";
       chat.appendChild(loading);
-      chat.scrollTop = chat.scrollHeight;
 
       try {
         const response = await fetch("/chat", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message })
         });
 
@@ -101,8 +219,9 @@
           return;
         }
 
-        addMessage(data.answer, "sage", data.sources);
-      } catch (error) {
+        addMessage(data.answer, "sage", data.sources, true);
+
+      } catch {
         loading.remove();
         addMessage("Something went wrong while contacting Sage.", "sage");
       }
@@ -110,10 +229,8 @@
 
     sendButton.addEventListener("click", sendMessage);
 
-    userInput.addEventListener("keypress", function(event) {
-      if (event.key === "Enter") {
-        sendMessage();
-      }
+    userInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") sendMessage();
     });
 
     loadIntro();

@@ -14,7 +14,7 @@ verbose = True
 display_rag = 0
 chatbot_democracy_resources_directory = "sage-resources/democracy-chatbot-resources"
 chatbot_wildfire_resources_directory = "sage-resources/wildfire-resources"
-upload_resources = False
+upload_resources = True
 
 ### ----------------------------------------------------------------------------------------------------
 ### Sage Settings        -
