@@ -14,6 +14,7 @@ verbose = True
 display_rag = 0
 chatbot_democracy_resources_directory = "sage-resources/democracy-chatbot-resources"
 chatbot_wildfire_resources_directory = "sage-resources/wildfire-resources"
+sage_instructions_directory = "sage-resources/sage-instructions"
 upload_resources = True
 
 ### ----------------------------------------------------------------------------------------------------
@@ -21,7 +22,13 @@ upload_resources = True
 ### ----------------------------------------------------------------------------------------------------
 
 sage = LLMProxy()
-sage_core = "" # to be uploaded upon setup
+sage_tone = ""
+sage_interaction = ""
+sage_formatting = ""
+sage_drafting = ""
+sage_guardrails = ""
+sage_intro = ""
+sage_privacy = ""
 sage_model = '4o-mini' # subject to change
 sage_temperature = 0.6 # subject to change
 sage_session_id = "sage"+str(timestamp) # subject to change --> may need to save
@@ -30,93 +37,34 @@ sage_rag_t = 0.4 # subject to change
 sage_rag_k = 5 # top number of chunks to fetch to use for rag, lets see if we need to set this
 
 ### ----------------------------------------------------------------------------------------------------
-### Static Prompts        -
-### ----------------------------------------------------------------------------------------------------
-
-introduction_prompt = """
-Introduce yourself as Sage, a civic helpdesk assistant for wildfire recovery.
-
-Structure the response in short paragraphs (2–3 sentences each), not one long block.
-
-1. Start with a brief introduction of who you are and what you can help with (FEMA, insurance, housing, rebuilding, and next steps).
-
-2. In a new paragraph, explain that you help users understand their options and figure out what actions to take. Mention that this can apply 
-whether they are handling something individually or working with others. Also mention that you can help draft useful materials (such as emails, plans, or meeting agendas) when helpful.
-
-3. In a new paragraph, ask 1–2 simple clarifying questions to understand their situation (what they are trying to do, and optionally whether they are acting alone or with others).
-
-4. In a short, separate sentence, note that responses are anonymous and users should avoid sharing sensitive personal details unless necessary.
-
-5. End with a separate sentence reminding them to contact emergency services (call 911) if they are in immediate danger.
-
-Keep the tone professional, clear, and supportive. Avoid long sentences.
-"""
-
-formatting_prompt = """
-Response Formatting
-
-Write responses in a structured, easy-to-scan format for a web interface.
-
-Choose the format that best fits the content. Vary your structure across responses:
-- use numbered steps for processes
-- use bullet points for recommendations or checklists
-- use tables for comparisons, roles, timelines, or structured plans
-- use simple labeled sections or arrows (→) to show flow or relationships
-
-Do not rely on a single format. Adapt structure to make the answer clearer and more actionable. 
-No need to repeat that responses are anonymous and to avoid sharing sensitive personal details. The user already knows that.
-
-Guidelines:
-- prioritize clarity and usability over verbosity
-- prefer structured layouts over long paragraphs
-- keep spacing and formatting clean and consistent
-
-Avoid:
-- markdown bold using ** **
-- raw HTML
-- long dense paragraphs
-"""
-
-drafting_prompt = """
-Drafting Support
-
-Whenever it would be genuinely helpful, proactively offer to draft a useful document or template for the user.
-
-Examples include:
-- meeting agendas
-- outreach emails or letters
-- checklists
-- decision worksheets
-- complaint drafts
-- reflection or evaluation plans
-- role descriptions
-- follow-up messages
-
-Only make this offer when it clearly fits the situation. Do not add a drafting offer to every response by default.
-
-When offering, be specific about what you can draft and why it would help. Keep the offer brief and practical.
-
-If drafting would be helpful:
-- suggest one concrete document
-- explain in one sentence what it would help the user do
-- ask for only the minimum details needed to tailor it
-
-Examples of good offers:
-- Would it help if I drafted a simple meeting agenda your group could use for the first session?
-- I can also draft a short email to your insurer or agency if you want something ready to send.
-- If helpful, I can turn this into a checklist you can use step by step.
-
-Avoid:
-- repeating drafting offers in every response
-- offering too many drafting options at once
-- asking for unnecessary details
-- make drafting message longer than 2-3 sentences or more than 3-4 lines long if a list.
-
-"""
-
-### ----------------------------------------------------------------------------------------------------
 ### Helpers        -
 ### ----------------------------------------------------------------------------------------------------
+
+def load_text_file(filepath):
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        print(f"Error: could not find file {filepath}")
+        return None
+    except PermissionError:
+        print(f"Error: permission denied when opening file {filepath}")
+        return None
+    except OSError as e:
+        print(f"Error: could not open file {filepath}: {e}")
+        return None
+
+
+def build_sage_system_prompt():
+    return "\n\n".join([
+        sage_tone,
+        sage_interaction,
+        sage_formatting,
+        sage_drafting,
+        sage_guardrails,
+        sage_privacy
+    ])
+
 
 def rag_context_string_simple(rag_context):
     """
@@ -194,17 +142,42 @@ def upload_2d_directory(filepath_str):
 
 
 def setup_sage():
+    global sage_tone
+    global sage_interaction
+    global sage_formatting
+    global sage_drafting
+    global sage_guardrails
+    global sage_intro
+    global sage_privacy
+
     if upload_resources:
         if not upload_2d_directory(chatbot_democracy_resources_directory):
             return False
         if not upload_2d_directory(chatbot_wildfire_resources_directory):
             return False
     try:
-        with open("sage-resources/sage-tone.txt") as f:
-            global sage_core
-            sage_core = f.read()
+        sage_tone = load_text_file(f"{sage_instructions_directory}/sage-tone.txt")
+        sage_interaction = load_text_file(f"{sage_instructions_directory}/sage-interaction.txt")
+        sage_formatting = load_text_file(f"{sage_instructions_directory}/sage-formatting.txt")
+        sage_drafting = load_text_file(f"{sage_instructions_directory}/sage-drafting.txt")
+        sage_guardrails = load_text_file(f"{sage_instructions_directory}/sage-guardrails.txt")
+        sage_intro = load_text_file(f"{sage_instructions_directory}/sage-introduction.txt")
+        sage_privacy = load_text_file(f"{sage_instructions_directory}/sage-privacy.txt")
     except:
         return False
+
+    if (
+        sage_tone is None or
+        sage_interaction is None or
+        sage_formatting is None or
+        sage_drafting is None or
+        sage_guardrails is None or
+        sage_intro is None or
+        sage_privacy is None
+    ):
+        print("One of more of sage's instructions failed to load.")
+        return False
+
     return True
 
 ### ----------------------------------------------------------------------------------------------------
@@ -229,7 +202,7 @@ def prompt_sage(query_prompt, include_rag=True):
     else:
         final_query = query_prompt
 
-    full_system_prompt = f"{sage_core}\n\n{formatting_prompt}\n\n{drafting_prompt}"
+    full_system_prompt = build_sage_system_prompt()
 
     response = sage.generate(
         model = sage_model,
@@ -243,7 +216,7 @@ def prompt_sage(query_prompt, include_rag=True):
     return response, rag_context
 
 def get_intro():
-    response, _ = prompt_sage(introduction_prompt, include_rag=False)
+    response, _ = prompt_sage(sage_intro, include_rag=False)
     return response["result"]
 
 def get_source(rag_context):
