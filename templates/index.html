@@ -38,12 +38,25 @@
       <!-- main ways sage can help -->
       <div class="sidebar-card">
         <h2>How Sage Can Help</h2>
-        <ul class="sidebar-list">
-          <li>Understand your options for FEMA, insurance, and recovery</li>
-          <li>Plan next steps for housing, rebuilding, and navigating systems</li>
-          <li>Organize with neighbors and coordinate community efforts</li>
-          <li>Create materials like meeting agendas, outreach messages, and action plans</li>
-        </ul>
+
+        <p>
+          Sage helps you understand your options and take practical steps after a wildfire. It supports both individual decisions and community efforts so you can move forward with clarity.
+        </p>
+
+        <!-- toggle button -->
+        <button class="expand-toggle" type="button" onclick="togglePrivacy(this)">
+          See more <span class="arrow">▾</span>
+        </button>
+
+        <!-- hidden content -->
+        <div class="expand-content">
+          <ul class="sidebar-list">
+            <li>Understand your options for FEMA, insurance, and recovery</li>
+            <li>Plan next steps for housing, rebuilding, and navigating systems</li>
+            <li>Organize with neighbors and coordinate community efforts</li>
+            <li>Create materials like meeting agendas, outreach messages, and action plans</li>
+          </ul>
+        </div>
       </div>
 
       <!-- privacy section -->
@@ -185,6 +198,68 @@
       textarea.style.height = "auto";
       const maxHeight = window.innerHeight * 0.7;
       textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + "px";
+    }
+
+    /**************************************************/
+    /* citation formatting */
+    /**************************************************/
+
+    // format the sources into a cleaner citation card
+    function formatSources(sources) {
+      if (typeof sources !== "string") {
+        return `<p>${JSON.stringify(sources, null, 2)}</p>`;
+      }
+
+      const text = sources.trim();
+
+      // split into blocks separated by blank lines
+      const blocks = text.split(/\n\s*\n/).map(block => block.trim()).filter(Boolean);
+
+      // if it already contains html from markdown, keep it
+      if (text.includes("<")) {
+        return sources;
+      }
+
+      // detect citation-style numbered list blocks
+      const citationBlocks = blocks.filter(block => /^\d+[\).\s]/.test(block));
+
+      let introBlocks = blocks.filter(block => !/^\d+[\).\s]/.test(block));
+
+      if (citationBlocks.length === 0) {
+        return marked.parse(sources);
+      }
+
+      const introHtml = introBlocks
+        .map(block => `<p>${block.replace(/\n/g, "<br>")}</p>`)
+        .join("");
+
+      const citationsHtml = citationBlocks.map((block, index) => {
+        const cleaned = block.replace(/^\d+[\).\s]+/, "");
+        const lines = cleaned.split("\n").map(line => line.trim()).filter(Boolean);
+
+        const title = lines[0] || "";
+        const subtitle = lines[1] || "";
+        const rest = lines.slice(2);
+
+        return `
+          <div class="source-item">
+            <div class="source-number">${index + 1}</div>
+            <div class="source-body">
+              <div class="source-title">${title}</div>
+              ${subtitle ? `<div class="source-subtitle">${subtitle}</div>` : ""}
+              ${rest.map(line => `<div class="source-link-line">${line}</div>`).join("")}
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      return `
+        ${introHtml}
+        <div class="sources-card">
+          <div class="sources-heading">SOURCES</div>
+          ${citationsHtml}
+        </div>
+      `;
     }
 
     /**************************************************/
@@ -336,12 +411,7 @@
 
         sourcesDiv = document.createElement("div");
         sourcesDiv.className = "sources collapsible-sources";
-
-        if (typeof sources === "string") {
-          sourcesDiv.innerHTML = marked.parse(sources);
-        } else {
-          sourcesDiv.textContent = JSON.stringify(sources, null, 2);
-        }
+        sourcesDiv.innerHTML = formatSources(sources);
 
         sourcesToggle.addEventListener("click", () => {
           const isOpen = sourcesDiv.classList.contains("open");
@@ -353,6 +423,11 @@
           } else {
             sourcesDiv.classList.add("open");
             arrow.textContent = "▴";
+
+            // scroll to the bottom of the expanded citations block
+            requestAnimationFrame(() => {
+              sourcesDiv.scrollIntoView({ behavior: "smooth", block: "end" });
+            });
           }
         });
 
@@ -361,9 +436,17 @@
         wrapper.appendChild(citationsArea);
       }
 
-      // add message to chat and scroll to bottom
+      // add message to chat
       chat.appendChild(wrapper);
-      chat.scrollTop = chat.scrollHeight;
+
+      // for bot replies, bring the top of the reply into view automatically
+      if (sender === "sage") {
+        requestAnimationFrame(() => {
+          wrapper.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      } else {
+        chat.scrollTop = chat.scrollHeight;
+      }
     }
 
     /**************************************************/

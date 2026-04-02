@@ -27,16 +27,12 @@ body {
   height: 100vh;
   display: flex;
   background: #f8fafb;
+  position: relative;
 }
 
 /**************************************************/
 /* sidebar collapse toggle */
 /**************************************************/
-
-/* make the shell the positioning context */
-.app-shell {
-  position: relative;
-}
 
 /* smooth sidebar animation */
 .sidebar {
@@ -299,8 +295,29 @@ body {
   padding: 28px 26px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
   background: #f8fafb;
+}
+
+/**************************************************/
+/* message wrappers */
+/**************************************************/
+
+/* let each message row span the chat width */
+.message-wrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* anchor bot replies to the left */
+.message-wrapper.sage {
+  align-items: flex-start;
+}
+
+/* anchor user replies to the right */
+.message-wrapper.user {
+  align-items: flex-end;
 }
 
 /**************************************************/
@@ -309,11 +326,13 @@ body {
 
 /* shared message styling */
 .message {
+  width: fit-content;
   max-width: 760px;
   padding: 16px 18px;
   border-radius: 20px;
   line-height: 1.6;
   word-wrap: break-word;
+  overflow-wrap: break-word;
   font-size: 14px;
 }
 
@@ -387,36 +406,25 @@ body {
 }
 
 /**************************************************/
-/* sources block */
-/**************************************************/
-
-/* style the citation or sources container */
-/* --- sources box --- */
-.sources {
-  margin-top: 10px;
-  font-size: 14px;
-  color: #444;
-  background: #fafafa;
-  border-left: 3px solid #301f8f;
-  padding: 10px 12px;
-  border-radius: 8px;
-}
-
-/**************************************************/
 /* citations toggle */
 /**************************************************/
 
+/* place the citations area just under the bot reply */
+.citations-area {
+  width: min(760px, 100%);
+  margin-left: 5px;
+}
+
+/* style the toggle line outside the citations box */
 .sources-toggle {
-  margin-top: 6px;
+  margin-top: 8px;
   padding: 0;
   border: none;
   background: none;
-
   font-family: 'Inter', sans-serif;
   font-size: 14px;
   font-weight: 500;
-
-  color: #3f8f7e; /* softer green like your screenshot */
+  color: #3f8f7e;
   cursor: pointer;
 }
 
@@ -432,25 +440,108 @@ body {
 /* collapsible sources */
 /**************************************************/
 
+/* hide citations until expanded */
 .collapsible-sources {
   display: none;
 }
 
+/* show citations with spacing below the toggle */
 .collapsible-sources.open {
   display: block;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 /**************************************************/
-/* sources box (keep this) */
+/* sources block */
 /**************************************************/
 
+/* style the citation block */
 .sources {
   font-size: 14px;
+  color: #444;
   background: #ffffff;
-  border: 1px solid var(--gray-200);
-  border-radius: 10px;
-  padding: 12px 14px;
+  border: 1px solid #d6dde5;
+  border-left: 4px solid #3f8f7e;
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+/* style any intro paragraph above the source list */
+.sources > p {
+  margin: 0 0 12px;
+  color: #475467;
+  line-height: 1.55;
+}
+
+/* style the inner sources card */
+.sources-card {
+  background: #ffffff;
+  border: 1px solid #dfe4ea;
+  border-radius: 12px;
+  padding: 14px 14px 10px;
+}
+
+/* style the sources label */
+.sources-heading {
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #667085;
+}
+
+/* lay out each source entry */
+.source-item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.source-item:last-child {
+  margin-bottom: 0;
+}
+
+/* style the source number circle */
+.source-number {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: #e8f2ef;
+  color: #3f8f7e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* style the source text block */
+.source-body {
+  min-width: 0;
+}
+
+.source-title {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: #1f2937;
+}
+
+.source-subtitle {
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #667085;
+}
+
+.source-link-line {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #3f8f7e;
 }
 
 /**************************************************/
@@ -593,5 +684,9 @@ body {
 
   .message {
     max-width: 88%;
+  }
+
+  .citations-area {
+    width: 88%;
   }
 }
