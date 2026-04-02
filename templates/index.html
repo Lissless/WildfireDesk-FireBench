@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- basic page metadata -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WildfireDesk</title>
@@ -9,34 +10,132 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
   <!-- import inter font -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="app">
-    <div class="header">
-      <h1>WildfireDesk</h1>
-      <p>Ask Sage about wildfire recovery, next steps, or community action.</p>
-    </div>
+  <div class="app-shell">
 
-    <div id="chat" class="chat-container">
-      <div class="message sage loading" id="intro-message">Loading Sage...</div>
-    </div>
+    <!-- left sidebar with product info and privacy -->
+    <aside class="sidebar">
 
-    <div class="input-area">
-      <input id="user-input" type="text" placeholder="Type your question here..." />
-      <button id="send-button">Send</button>
-    </div>
+      <!-- product title and short description -->
+      <div class="sidebar-brand">
+        <h1>WildfireDesk</h1>
+        <p>Ask Sage about wildfire recovery, next steps, or community action.</p>
+      </div>
+
+      <!-- concise mission statement -->
+      <div class="sidebar-card">
+        <h2>About Sage</h2>
+        <p>
+          Sage’s mission is to support wildfire recovery by helping people take informed action and work together with their communities to rebuild and move forward.
+        </p>
+
+        <p style="margin-top: 10px;">
+          It is a <strong>non-partisan, non-commercial</strong> AI assistant focused on practical guidance and community-driven solutions.
+        </p>      
+      </div>
+
+      <!-- main ways sage can help -->
+      <div class="sidebar-card">
+        <h2>How Sage Can Help</h2>
+        <ul class="sidebar-list">
+          <li>FEMA applications &amp; disaster relief</li>
+          <li>Insurance claims &amp; housing resources</li>
+          <li>Community organizing &amp; mutual aid</li>
+          <li>Evacuation planning &amp; preparedness</li>
+        </ul>
+      </div>
+
+      <!-- privacy section with expandable details -->
+      <div class="sidebar-card">
+        <h2>Privacy</h2>
+        <p>
+          Your privacy matters. Sage is designed to support you without storing personal information.
+        </p>
+
+        <!-- toggle button for expanded privacy details -->
+        <button class="expand-toggle" type="button" onclick="togglePrivacy(this)">
+          See more <span class="arrow">▾</span>
+        </button>
+
+        <!-- hidden content shown when expanded -->
+        <div class="expand-content">
+          <ul class="sidebar-list">
+            <li>We do not store your personal data or chat history.</li>
+            <li>Your messages are only used to generate responses during this session.</li>
+            <li>Conversations are not saved, shared, or used for training.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- emergency callout fixed to bottom -->
+      <div class="sidebar-alert">
+        If you are in immediate danger, call 911.
+      </div>
+    </aside>
+
+    <!-- main chat area -->
+    <main class="app">
+
+      <!-- top header for sage -->
+      <div class="header">
+        <div class="chat-title-row">
+          <div>
+            <h2>Sage</h2>
+            <p>Ask Sage about wildfire recovery, next steps, or community action.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- chat messages render here -->
+      <div id="chat" class="chat-container">
+        <div class="message sage loading" id="intro-message">Loading Sage...</div>
+      </div>
+
+      <!-- input row for sending user messages -->
+      <div class="input-area">
+        <input id="user-input" type="text" placeholder="Ask Sage a question..." />
+        <button id="send-button">Send</button>
+      </div>
+    </main>
   </div>
 
   <!-- markdown parser -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
   <script>
+    /**************************************************/
+    /* main dom references */
+    /**************************************************/
+
     // grab the main page elements
     const chat = document.getElementById("chat");
     const userInput = document.getElementById("user-input");
     const sendButton = document.getElementById("send-button");
     const introMessage = document.getElementById("intro-message");
+
+    /**************************************************/
+    /* sidebar interactions */
+    /**************************************************/
+
+    // expand or collapse the privacy section
+    function togglePrivacy(button) {
+      const content = button.parentElement.querySelector(".expand-content");
+      const isOpen = content.classList.contains("open");
+
+      if (isOpen) {
+        content.classList.remove("open");
+        button.innerHTML = 'See more <span class="arrow">▾</span>';
+      } else {
+        content.classList.add("open");
+        button.innerHTML = 'See less <span class="arrow">▴</span>';
+      }
+    }
+
+    /**************************************************/
+    /* download and editing helpers */
+    /**************************************************/
 
     // create and download a word document from html content
     function downloadWordDoc(filename, htmlContent) {
@@ -73,6 +172,10 @@
       const maxHeight = window.innerHeight * 0.7;
       textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + "px";
     }
+
+    /**************************************************/
+    /* message rendering */
+    /**************************************************/
 
     // add a message bubble to the chat
     function addMessage(text, sender, sources = null, showActions = true) {
@@ -220,6 +323,10 @@
       chat.scrollTop = chat.scrollHeight;
     }
 
+    /**************************************************/
+    /* api calls */
+    /**************************************************/
+
     // load the intro message from the backend
     async function loadIntro() {
       try {
@@ -269,6 +376,10 @@
         addMessage("Something went wrong while contacting Sage.", "sage");
       }
     }
+
+    /**************************************************/
+    /* event listeners */
+    /**************************************************/
 
     // click send button to submit message
     sendButton.addEventListener("click", sendMessage);
