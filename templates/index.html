@@ -204,7 +204,6 @@
     /* citation formatting */
     /**************************************************/
 
-    // format the sources into a cleaner citation card
     function formatSources(sources) {
       if (typeof sources !== "string") {
         return `<p>${JSON.stringify(sources, null, 2)}</p>`;
@@ -212,46 +211,65 @@
 
       const text = sources.trim();
 
-      // split into blocks separated by blank lines
-      const blocks = text.split(/\n\s*\n/).map(block => block.trim()).filter(Boolean);
-
-      // if it already contains html from markdown, keep it
       if (text.includes("<")) {
         return sources;
       }
 
-      // detect citation-style numbered list blocks
-      const citationBlocks = blocks.filter(block => /^\d+[\).\s]/.test(block));
+      /**************************************************/
+      /* split intro text from citations */
+      /**************************************************/
 
-      let introBlocks = blocks.filter(block => !/^\d+[\).\s]/.test(block));
+      const firstCitationMatch = text.match(/(?:^|\n)\s*1[\).\s]/);
+
+      let introText = "";
+      let citationsText = text;
+
+      if (firstCitationMatch && firstCitationMatch.index > 0) {
+        introText = text.slice(0, firstCitationMatch.index).trim();
+        citationsText = text.slice(firstCitationMatch.index).trim();
+      }
+
+      /**************************************************/
+      /* split only on numbered citations */
+      /**************************************************/
+
+      const citationBlocks = citationsText
+        .split(/\n(?=\s*\d+[\).\s])/)
+        .map(block => block.trim())
+        .filter(block => /^\d+[\).\s]/.test(block));
 
       if (citationBlocks.length === 0) {
         return marked.parse(sources);
       }
 
-      const introHtml = introBlocks
-        .map(block => `<p>${block.replace(/\n/g, "<br>")}</p>`)
-        .join("");
+      /**************************************************/
+      /* build intro paragraph */
+      /**************************************************/
+
+      const introHtml = introText
+        ? `<p>${introText.replace(/\n/g, "<br>")}</p>`
+        : "";
+
+      /**************************************************/
+      /* build citation blocks */
+      /**************************************************/
 
       const citationsHtml = citationBlocks.map((block, index) => {
-        const cleaned = block.replace(/^\d+[\).\s]+/, "");
-        const lines = cleaned.split("\n").map(line => line.trim()).filter(Boolean);
-
-        const title = lines[0] || "";
-        const subtitle = lines[1] || "";
-        const rest = lines.slice(2);
+        const cleaned = block.replace(/^\d+[\).\s]+/, "").trim();
 
         return `
           <div class="source-item">
             <div class="source-number">${index + 1}</div>
             <div class="source-body">
-              <div class="source-title">${title}</div>
-              ${subtitle ? `<div class="source-subtitle">${subtitle}</div>` : ""}
-              ${rest.map(line => `<div class="source-link-line">${line}</div>`).join("")}
+              <div class="source-text">${cleaned}</div>
             </div>
           </div>
         `;
       }).join("");
+
+      /**************************************************/
+      /* return final html */
+      /**************************************************/
 
       return `
         ${introHtml}
@@ -261,7 +279,6 @@
         </div>
       `;
     }
-
     /**************************************************/
     /* message rendering */
     /**************************************************/

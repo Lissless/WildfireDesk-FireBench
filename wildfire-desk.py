@@ -239,36 +239,47 @@ def get_source(rag_context):
     doc_summaries = parse_retrieve_rag_context(rag_context)
 
     citation_prompt = f"""
-    You are generating a short 'Where this advice comes from' section for a user.
+        You are generating a short "Where this advice comes from" section for a user.
 
-    Documents:
-    {doc_summaries}
+        Documents:
+        {doc_summaries}
 
-    First, write a short paragraph (2–3 sentences total) that:
-    - explains what kinds of sources this advice draws from
-    - describes the perspective or approach these sources take
-    - clearly connects that perspective to the advice given
+        Write the output in TWO parts:
 
-    Use plain, non-academic language. Do not sound like a formal citation.
+        PART 1 — SUMMARY PARAGRAPH
+        Write a short paragraph (2–3 sentences total) that:
+        - explains what kinds of sources this advice draws from
+        - describes the perspective or approach these sources take
+        - clearly connects that perspective to the advice given
 
-    Then, underneath, include a section where you briefly provide MLA-style citations for the same sources.
-    Keep these concise. Include any information you have such as author, title, date, publisher, or hyperlink.
+        Rules for the paragraph:
+        - Use plain, non-academic language
+        - Do not use markdown of any kind
+        - Do not use bold, italics, or symbols such as ** or *
+        - Do not use headings
+        - Write in clean plain text only
 
-    When constructing citations:
-    - Include all relevant details when they are clearly available
-    - If any information is missing, omit it cleanly
-    - Do not insert placeholders such as "[No date available]"
-    - Do not guess or fabricate missing details
-    - Ensure each citation still reads naturally even if some fields are missing
+        PART 2 — CITATIONS
+        Under the paragraph, provide MLA-style citations for the same sources.
 
-    Requirements:
-    - The paragraph should be 2–3 sentences total
-    - No bullet points in the paragraph
-    - MLA citations should be in a simple numbered list format
-    - Do not repeat explanations in the MLA section
+        Rules for citations:
+        - Use a simple numbered list (1., 2., 3.)
+        - Each citation must be a single line of plain text
+        - Include only information that is available (author, title, date, publisher, link)
+        - Do not guess or fabricate missing information
+        - Do not use placeholders such as "[No date available]"
+        - Do not use markdown
+        - Do not use bold, italics, or symbols such as ** or *
+        - Do not use headings
+        - Do not include extra explanation
 
-    Return only this output.
-    """    
+        FINAL OUTPUT RULES:
+        - Return only plain text
+        - Do not include section titles or labels
+        - Do not include "MLA-style citations" or any header
+        - Do not include markdown anywhere in the output
+        """
+    
     response, _ = prompt_sage(citation_prompt)
     return response["result"]
     

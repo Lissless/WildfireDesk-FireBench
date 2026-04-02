@@ -99,6 +99,16 @@ body {
   left: 18px;
 }
 
+/* increase max width of message bubbles */
+.app-shell.sidebar-collapsed .message {
+  max-width: 95%; /* was ~760px before */
+}
+
+/* expand citations area to match */
+.app-shell.sidebar-collapsed .citations-area {
+  width: 95%;
+}
+
 /**************************************************/
 /* left sidebar */
 /**************************************************/
@@ -503,7 +513,6 @@ body {
   margin-bottom: 0;
 }
 
-/* style the source number circle */
 .source-number {
   width: 28px;
   height: 28px;
@@ -518,30 +527,16 @@ body {
   font-weight: 700;
 }
 
-/* style the source text block */
 .source-body {
   min-width: 0;
 }
 
-.source-title {
+.source-text {
   font-size: 14px;
-  font-weight: 700;
-  line-height: 1.45;
+  line-height: 1.55;
   color: #1f2937;
-}
-
-.source-subtitle {
-  margin-top: 2px;
-  font-size: 13px;
-  line-height: 1.45;
-  color: #667085;
-}
-
-.source-link-line {
-  margin-top: 6px;
-  font-size: 13px;
-  line-height: 1.45;
-  color: #3f8f7e;
+  white-space: normal;
+  word-break: break-word;
 }
 
 /**************************************************/
