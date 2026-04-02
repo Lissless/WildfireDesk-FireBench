@@ -30,6 +30,80 @@ body {
 }
 
 /**************************************************/
+/* sidebar collapse toggle */
+/**************************************************/
+
+/* make the shell the positioning context */
+.app-shell {
+  position: relative;
+}
+
+/* smooth sidebar animation */
+.sidebar {
+  transition: width 0.22s ease, padding 0.22s ease, opacity 0.18s ease;
+  overflow: hidden;
+}
+
+/* cleaner floating toggle button */
+.sidebar-toggle {
+  position: absolute;
+  top: 50%;
+  left: 380px; /* match sidebar width */
+  transform: translate(-50%, -50%);
+  z-index: 30;
+
+  width: 28px;
+  height: 56px;
+  border: 1px solid #d6dde5;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #5f7085;
+
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+  transition:
+    left 0.22s ease,
+    background 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.sidebar-toggle:hover {
+  background: #f8fafc;
+  color: #111827;
+  border-color: #c9d3df;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+}
+
+.sidebar-toggle:active {
+  transform: translate(-50%, -50%) scale(0.98);
+}
+
+/* collapsed sidebar state */
+.app-shell.sidebar-collapsed .sidebar {
+  width: 0;
+  padding-left: 0;
+  padding-right: 0;
+  border-right: none;
+  opacity: 0;
+}
+
+/* move toggle to the far left when collapsed */
+.app-shell.sidebar-collapsed .sidebar-toggle {
+  left: 18px;
+}
+
+/**************************************************/
 /* left sidebar */
 /**************************************************/
 
@@ -201,8 +275,8 @@ body {
 }
 
 .chat-title-row h2 {
-  margin: 0;
-  font-size: 16px;
+  margin-top: 6px;
+  font-size: 18px;
   font-weight: 700;
   color: #111827;
 }
@@ -317,14 +391,15 @@ body {
 /**************************************************/
 
 /* style the citation or sources container */
+/* --- sources box --- */
 .sources {
-  margin-top: 12px;
-  font-size: 13px;
-  color: #475467;
-  background: #ffffff;
-  border: 1px solid #d6dde5;
-  padding: 14px 16px;
-  border-radius: 14px;
+  margin-top: 10px;
+  font-size: 14px;
+  color: #444;
+  background: #fafafa;
+  border-left: 3px solid #301f8f;
+  padding: 10px 12px;
+  border-radius: 8px;
 }
 
 /**************************************************/

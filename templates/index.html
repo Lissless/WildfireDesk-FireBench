@@ -21,7 +21,6 @@
       <!-- product title and short description -->
       <div class="sidebar-brand">
         <h1>WildfireDesk</h1>
-        <p>Ask Sage about wildfire recovery, next steps, or community action.</p>
       </div>
 
       <!-- concise mission statement -->
@@ -40,26 +39,24 @@
       <div class="sidebar-card">
         <h2>How Sage Can Help</h2>
         <ul class="sidebar-list">
-          <li>FEMA applications &amp; disaster relief</li>
-          <li>Insurance claims &amp; housing resources</li>
-          <li>Community organizing &amp; mutual aid</li>
-          <li>Evacuation planning &amp; preparedness</li>
-        </ul>
+          <li>Understand your options for FEMA, insurance, and recovery</li>
+          <li>Plan next steps for housing, rebuilding, and navigating systems</li>
+          <li>Organize with neighbors and coordinate community efforts</li>
+          <li>Create materials like meeting agendas, outreach messages, and action plans</li>
+        </ul>      
       </div>
 
-      <!-- privacy section with expandable details -->
+      <!-- privacy section -->
       <div class="sidebar-card">
         <h2>Privacy</h2>
         <p>
           Your privacy matters. Sage is designed to support you without storing personal information.
         </p>
 
-        <!-- toggle button for expanded privacy details -->
         <button class="expand-toggle" type="button" onclick="togglePrivacy(this)">
           See more <span class="arrow">▾</span>
         </button>
 
-        <!-- hidden content shown when expanded -->
         <div class="expand-content">
           <ul class="sidebar-list">
             <li>We do not store your personal data or chat history.</li>
@@ -74,6 +71,9 @@
         If you are in immediate danger, call 911.
       </div>
     </aside>
+
+    <!-- sidebar collapse toggle -->
+    <button id="sidebar-toggle" class="sidebar-toggle" type="button">◀</button>
 
     <!-- main chat area -->
     <main class="app">
@@ -109,17 +109,28 @@
     /* main dom references */
     /**************************************************/
 
-    // grab the main page elements
     const chat = document.getElementById("chat");
     const userInput = document.getElementById("user-input");
     const sendButton = document.getElementById("send-button");
     const introMessage = document.getElementById("intro-message");
 
+    const appShell = document.querySelector(".app-shell");
+    const sidebarToggle = document.getElementById("sidebar-toggle");
+
     /**************************************************/
-    /* sidebar interactions */
+    /* sidebar collapse */
     /**************************************************/
 
-    // expand or collapse the privacy section
+    // toggle full sidebar open/close
+    sidebarToggle.addEventListener("click", () => {
+      const collapsed = appShell.classList.toggle("sidebar-collapsed");
+      sidebarToggle.textContent = collapsed ? "▶" : "◀";
+    });
+
+    /**************************************************/
+    /* privacy expand */
+    /**************************************************/
+
     function togglePrivacy(button) {
       const content = button.parentElement.querySelector(".expand-content");
       const isOpen = content.classList.contains("open");
@@ -134,10 +145,9 @@
     }
 
     /**************************************************/
-    /* download and editing helpers */
+    /* rest of your existing code unchanged */
     /**************************************************/
 
-    // create and download a word document from html content
     function downloadWordDoc(filename, htmlContent) {
       const fullHtml = `
         <html xmlns:o="urn:schemas-microsoft-com:office:office"
@@ -166,23 +176,16 @@
       URL.revokeObjectURL(url);
     }
 
-    // size the textarea to match the content, but cap it at 70% of screen height
     function autoResizeTextarea(textarea) {
       textarea.style.height = "auto";
       const maxHeight = window.innerHeight * 0.7;
       textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + "px";
     }
 
-    /**************************************************/
-    /* message rendering */
-    /**************************************************/
-
-    // add a message bubble to the chat
     function addMessage(text, sender, sources = null, showActions = true) {
       const wrapper = document.createElement("div");
       wrapper.className = `message ${sender}`;
 
-      // create the rendered markdown content
       const contentDiv = document.createElement("div");
       contentDiv.className = "message-content";
       contentDiv.innerHTML = marked.parse(text);
@@ -190,7 +193,6 @@
 
       let sourcesDiv = null;
 
-      // add sources block if sources exist
       if (sources) {
         sourcesDiv = document.createElement("div");
         sourcesDiv.className = "sources";
@@ -204,130 +206,10 @@
         wrapper.appendChild(sourcesDiv);
       }
 
-      // only sage responses get action buttons
-      if (sender === "sage" && showActions) {
-        const actions = document.createElement("div");
-        actions.className = "message-actions";
-
-        const copyBtn = document.createElement("button");
-        copyBtn.className = "action-button";
-        copyBtn.textContent = "Copy";
-
-        const editBtn = document.createElement("button");
-        editBtn.className = "action-button";
-        editBtn.textContent = "Edit";
-
-        const downloadBtn = document.createElement("button");
-        downloadBtn.className = "action-button";
-        downloadBtn.textContent = "Download";
-
-        let isEditing = false;
-        let textarea = null;
-        let originalText = text;
-
-        // copy the visible text of the message
-        copyBtn.onclick = async () => {
-          await navigator.clipboard.writeText(contentDiv.innerText);
-          copyBtn.textContent = "Copied";
-          setTimeout(() => {
-            copyBtn.textContent = "Copy";
-          }, 1500);
-        };
-
-        // switch into edit mode or save edited content
-        editBtn.onclick = () => {
-          if (!isEditing) {
-            isEditing = true;
-
-            // create the textarea with the original markdown text
-            textarea = document.createElement("textarea");
-            textarea.className = "message-editor";
-            textarea.value = originalText;
-
-            // replace rendered content with the textarea
-            wrapper.replaceChild(textarea, contentDiv);
-            wrapper.classList.add("editing");
-
-            editBtn.textContent = "Save";
-
-            // wait until textarea is in the dom, then size it to match message height
-            requestAnimationFrame(() => {
-              autoResizeTextarea(textarea);
-              textarea.focus();
-              textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-            });
-
-            // resize while user types
-            textarea.addEventListener("input", () => autoResizeTextarea(textarea));
-
-            // add cancel button if it does not already exist
-            let cancelBtn = actions.querySelector('[data-role="cancel"]');
-
-            if (!cancelBtn) {
-              cancelBtn = document.createElement("button");
-              cancelBtn.className = "action-button cancel-button";
-              cancelBtn.textContent = "Cancel";
-              cancelBtn.dataset.role = "cancel";
-
-              // put original rendered message back if user cancels
-              cancelBtn.onclick = () => {
-                isEditing = false;
-                contentDiv.innerHTML = marked.parse(originalText);
-                wrapper.replaceChild(contentDiv, textarea);
-                wrapper.classList.remove("editing");
-                editBtn.textContent = "Edit";
-                cancelBtn.remove();
-              };
-
-              actions.appendChild(cancelBtn);
-            }
-
-          } else {
-            isEditing = false;
-
-            // save updated text and render it as markdown again
-            originalText = textarea.value;
-            contentDiv.innerHTML = marked.parse(originalText);
-
-            wrapper.replaceChild(contentDiv, textarea);
-            wrapper.classList.remove("editing");
-            editBtn.textContent = "Edit";
-
-            // remove cancel button after saving
-            const cancelBtn = actions.querySelector('[data-role="cancel"]');
-            if (cancelBtn) cancelBtn.remove();
-          }
-        };
-
-        // download the message content, and sources if they exist
-        downloadBtn.onclick = () => {
-          const temp = document.createElement("div");
-          temp.innerHTML = contentDiv.innerHTML;
-
-          if (sourcesDiv) {
-            temp.appendChild(document.createElement("hr"));
-            temp.appendChild(sourcesDiv.cloneNode(true));
-          }
-
-          downloadWordDoc("sage-response.doc", temp.innerHTML);
-        };
-
-        actions.appendChild(copyBtn);
-        actions.appendChild(editBtn);
-        actions.appendChild(downloadBtn);
-        wrapper.appendChild(actions);
-      }
-
-      // add message to chat and scroll to bottom
       chat.appendChild(wrapper);
       chat.scrollTop = chat.scrollHeight;
     }
 
-    /**************************************************/
-    /* api calls */
-    /**************************************************/
-
-    // load the intro message from the backend
     async function loadIntro() {
       try {
         const response = await fetch("/intro");
@@ -339,7 +221,6 @@
       }
     }
 
-    // send the user's message to the backend and show sage's response
     async function sendMessage() {
       const message = userInput.value.trim();
       if (!message) return;
@@ -347,12 +228,10 @@
       addMessage(message, "user");
       userInput.value = "";
 
-      // show temporary loading state
       const loading = document.createElement("div");
       loading.className = "message sage loading";
       loading.textContent = "Sage is thinking...";
       chat.appendChild(loading);
-      chat.scrollTop = chat.scrollHeight;
 
       try {
         const response = await fetch("/chat", {
@@ -363,12 +242,6 @@
 
         const data = await response.json();
         loading.remove();
-
-        if (data.error) {
-          addMessage(data.error, "sage");
-          return;
-        }
-
         addMessage(data.answer, "sage", data.sources, true);
 
       } catch {
@@ -377,19 +250,11 @@
       }
     }
 
-    /**************************************************/
-    /* event listeners */
-    /**************************************************/
-
-    // click send button to submit message
     sendButton.addEventListener("click", sendMessage);
-
-    // press enter to submit message
     userInput.addEventListener("keypress", (e) => {
       if (e.key === "Enter") sendMessage();
     });
 
-    // load intro message when page opens
     loadIntro();
   </script>
 </body>

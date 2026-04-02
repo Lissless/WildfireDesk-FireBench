@@ -15,9 +15,9 @@ Guidelines:
 - keep spacing and formatting clean and consistent
 
 Avoid:
+- Using too much bold.  
 - long dense paragraphs
 - raw HTML
 - markdown bold using ** **
-- Using bold too much. 
 
 No need to repeat that responses are anonymous or to avoid sharing sensitive personal details.
