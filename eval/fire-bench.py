@@ -100,17 +100,18 @@ def eval_pred(out_file, save_dir):
 
     with open(prompt_path, "r", encoding="utf-8") as f:
         data = json.load(f)
-
     num_right = sum(1 for item in data if item.get("judge"))
     overall_win_rate = np.round(num_right / len(data), 2) if data else 0.0
 
     source_counts = defaultdict(lambda: {"correct": 0, "total": 0})
     class_counts = defaultdict(lambda: {"correct": 0, "total": 0})
-
+    class_counts2 = defaultdict(lambda: {"A": 0, "B": 0, "C": 0, "D": 0})
+    source_counts2 = defaultdict(lambda: {"A": 0, "B": 0, "C": 0, "D": 0})
     for item in data:
         judge = item.get("judge", False)
         source = item.get("source", "Unknown")
         cls = item.get("class", "Unknown")
+        answer = item.get("answer","Unknown")
 
         source_counts[source]["total"] += 1
         source_counts[source]["correct"] += int(judge)
@@ -118,20 +119,30 @@ def eval_pred(out_file, save_dir):
         class_counts[cls]["total"] += 1
         class_counts[cls]["correct"] += int(judge)
 
+        class_counts2[cls][answer] += 1
+        source_counts2[source][answer] += 1
+
     source_win_rate = {k: np.round(v["correct"] / v["total"], 2) if v["total"] > 0 else 0.0
                        for k, v in source_counts.items()}
     class_win_rate = {k: np.round(v["correct"] / v["total"], 2) if v["total"] > 0 else 0.0
                       for k, v in class_counts.items()}
+    class2 = dict(class_counts2)
 
     result = {
         "overall_win_rate": overall_win_rate,
         "source_win_rate": source_win_rate,
         "class_win_rate": class_win_rate
     }
-
+    result2 = {
+        "answer_class_distribution": class2,
+        "answer_source_distribution": source_counts2
+    }
     score_file = os.path.join(save_dir, f"{args.file}_{args.model}_{timestamp}_score.json")
+    answer_file = os.path.join(save_dir, f"{args.file}_{args.model}_{timestamp}_answer.json")
     with open(score_file, "w", encoding="utf-8") as f:
         json.dump(result, f, indent=2)
+    with open(answer_file, "w", encoding="utf-8") as f:
+        json.dump(result2, f, indent=2)
 def main():
     save_dir = os.path.join(base_dir, "results")
     os.makedirs(save_dir, exist_ok=True)
@@ -151,7 +162,8 @@ def main():
         if item["_id"] not in has_data:
             data.append(item)
 
-    get_pred(data, args, out_file)
+    #get_pred(data, args, out_file)
+    out_file = r"civic_4o-mini_20260323_195550.jsonl"
     eval_pred(out_file,save_dir)
 
 if __name__ == '__main__':
