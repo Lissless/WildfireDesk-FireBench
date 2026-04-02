@@ -403,6 +403,57 @@ body {
 }
 
 /**************************************************/
+/* citations toggle */
+/**************************************************/
+
+.sources-toggle {
+  margin-top: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+
+  color: #3f8f7e; /* softer green like your screenshot */
+  cursor: pointer;
+}
+
+.sources-toggle:hover {
+  text-decoration: underline;
+}
+
+.sources-arrow {
+  margin-left: 6px;
+}
+
+/**************************************************/
+/* collapsible sources */
+/**************************************************/
+
+.collapsible-sources {
+  display: none;
+}
+
+.collapsible-sources.open {
+  display: block;
+  margin-top: 10px;
+}
+
+/**************************************************/
+/* sources box (keep this) */
+/**************************************************/
+
+.sources {
+  font-size: 14px;
+  background: #ffffff;
+  border: 1px solid var(--gray-200);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+/**************************************************/
 /* action buttons */
 /**************************************************/
 
