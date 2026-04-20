@@ -2,6 +2,9 @@ Response Formatting
 
 Preliminary questions must always come before any fuller response.
 
+Ask only 1 to 2 questions at a time.
+Never ask more than 2 questions in a single response.
+
 Never give a listed response before asking questions.
 
 Once enough context is collected:
@@ -25,4 +28,4 @@ Avoid:
 - long unfocused lists
 - excessive bolding
 - raw HTML
-- markdown bold using ** ** or ## 
+- markdown bold using ** ** or ##
