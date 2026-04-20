@@ -7,7 +7,7 @@ import re
 import time
 import numpy as np
 from collections import defaultdict
-from wildfire_desk import prompt_sage, sage_model
+from wildfire_desk import prompt_sage
 agent = LLMProxy()
 base_dir = os.path.dirname(__file__)
 prompt_path = os.path.join(base_dir, "prompts", "prompt_choose.txt")
@@ -25,17 +25,16 @@ display_rag = True
 ### ----------------------
 sage = LLMProxy()
 sage_core = "" # to be uploaded upon setup
-sage_model = sage_model # subject to change
 sage_temperature = 0.6 # subject to change
 sage_session_id = "sage"+str(timestamp) # subject to change --> may need to save
 sage_rag_t = 0.4 # subject to change
 sage_rag_k = 5 # top number of documents to fetch to use for rag, lets see if we need to set this
-def query_llm(query_prompt):
+def query_llm(query_prompt,args):
     tries = 0
     while tries < 5:
         tries += 1
         try:
-            response = prompt_sage(query_prompt)
+            response = prompt_sage(query_prompt,args.rag,args.model)
             return response
         except KeyboardInterrupt as e:
             raise e
@@ -80,7 +79,7 @@ def get_pred(data, args, save_path):
                          .replace('$C_C$', item['choice_C'].strip()) \
                          .replace('$C_D$', item['choice_D'].strip())
 
-        output = query_llm(prompt)
+        output = query_llm(prompt,args)
 
         if output == '':
             continue

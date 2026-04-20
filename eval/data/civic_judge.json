@@ -1,0 +1,25 @@
+[
+  {
+    "_id": "001",
+    "question": "What is the main collective strategy that best reflects the group’s discussion?",
+    "response": "",
+    "high_class": "Civic & Political Knowledge",
+    "sub_class": "Roles and authority in local government",
+    "AI_grade": {
+      "Factual and Procedural Accuracy": "",
+      "Actionability": "",
+      "Contextual Relevance": "",
+      "Completeness": "",
+      "Clarity & Usability": "",
+      "Civic Responsibility": ""
+    },
+    "expert_grade": {
+      "Factual and Procedural Accuracy": "",
+      "Actionability": "",
+      "Contextual Relevance": "",
+      "Completeness": "",
+      "Clarity & Usability": "",
+      "Civic Responsibility": ""
+    }
+  }
+]

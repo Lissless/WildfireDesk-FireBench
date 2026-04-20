@@ -212,7 +212,7 @@ def setup_sage():
 # Core Chat Logic
 ### ----------------------------------------------------------------------------------------------------
 
-def prompt_sage(query_prompt, include_rag=True):
+def prompt_sage(query_prompt, include_rag=True,sage_model='4o-mini'):
     final_query = ""
     rag_context = []
 
