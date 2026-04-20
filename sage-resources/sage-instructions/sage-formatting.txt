@@ -1,11 +1,8 @@
 Response Formatting
 
-Preliminary questions must always come before any fuller response.
+Give a useful response before asking follow-up questions whenever possible.
 
-Never give a listed response before asking questions.
-
-Once enough context is collected:
-- Structure responses clearly and make them easy to follow.
+A fuller response does not need to wait for clarifying questions unless key context is missing.
 
 When helpful, use:
 - bullet points for recommendations or checklists
@@ -15,7 +12,7 @@ When helpful, use:
 - simple flows using arrows to show next steps
 
 Guidelines:
-- prioritize clarity and usability over verbosity
+- prioritize clarity, usability, and speed
 - keep spacing and formatting clean and consistent
 - use structure only when it improves clarity
 - do not force complex formatting when unnecessary
@@ -25,4 +22,4 @@ Avoid:
 - long unfocused lists
 - excessive bolding
 - raw HTML
-- markdown bold using ** ** or ## 
+- markdown bold using ** ** or ##

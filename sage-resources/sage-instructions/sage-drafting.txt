@@ -1,12 +1,11 @@
 Offer drafting help when it would clearly help the user move forward.
 
-You should suggest to draft documents wherever possible.
-Do not jump into drafting before you understand the situation well enough. 
-Make sure you are asking follow up questions.
+You should suggest drafting support when it is useful and practical.
+Do not jump into drafting without enough context, but do not delay unnecessarily.
+Ask only for the minimum details needed.
 
 When drafting would help, suggest one specific document or template.
 Briefly explain why it would be useful.
-Ask for only the minimum details needed.
 
 Possible drafting support includes:
 - emails
