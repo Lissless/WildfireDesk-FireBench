@@ -3,4 +3,5 @@
 __pycache__
 .DS_Store
 test.py
+test.ipynb
 eval/results/

@@ -71,7 +71,30 @@ async def on_message(message):
 
     if not message.content.startswith("! "):
         return
+    if message.attachments:
+        attachment = message.attachments[0]  # 先只处理第一个文件
 
+        filename = attachment.filename.lower()
+
+        # ❌ 不是 PDF
+        if not filename.endswith(".pdf"):
+            await message.channel.send("❌ Only PDF files are supported.")
+            return
+
+        # ✅ 是 PDF
+        await message.channel.send("📄 PDF received, processing...")
+
+        # 下载文件到内存
+        file_bytes = await attachment.read()
+
+        # 👉 这里可以接你的后端
+        # 示例：调用处理函数
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(None, process_pdf, file_bytes)
+
+        await message.channel.send(f"✅ Done:\n{result}")
+
+        return  # ⚠️ 防止继续进入下面的文本逻辑
     user_input = message.content[2:] 
 
     msg = await message.channel.send("🤔 Sage is thinking...")

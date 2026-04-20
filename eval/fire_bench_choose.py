@@ -162,8 +162,8 @@ def main():
         if item["_id"] not in has_data:
             data.append(item)
 
-    #get_pred(data, args, out_file)
-    out_file = r"civic_4o-mini_20260323_195550.jsonl"
+    get_pred(data, args, out_file)
+    #out_file = r"civic_4o-mini_20260323_195550.jsonl"
     eval_pred(out_file,save_dir)
 
 if __name__ == '__main__':
