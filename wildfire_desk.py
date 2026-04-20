@@ -31,11 +31,13 @@ sage_intro = ""
 sage_privacy = ""
 sage_model = '4o-mini' # subject to change
 sage_temperature = 0.6 # subject to change
-sage_session_id = "sage"+str(timestamp) # subject to change --> may need to save
+sage_grounded_session_id = "sage_grounded_" + str(timestamp)
+sage_general_session_id = "sage_general_" + str(timestamp)
 sage_RAG_id = "sage_rag2"#+str(timestamp)
 sage_rag_t = 0.4 # subject to change
 sage_rag_k = 5 # top number of chunks to fetch to use for rag, lets see if we need to set this
-sage_lastk = 10
+sage_intro_session_id = "sage_intro_" + str(timestamp)
+sage_lastk = 3
 
 ### ----------------------------------------------------------------------------------------------------
 ### Helpers        -
@@ -100,6 +102,12 @@ def parse_retrieve_rag_context(rag_ctx):
         index+=1
     
     return summaries, index
+
+
+def get_sage_session_id(include_rag=True):
+    if include_rag:
+        return sage_grounded_session_id
+    return sage_general_session_id
 
 ### ----------------------------------------------------------------------------------------------------
 ### Sage Setup        -
@@ -191,33 +199,46 @@ def prompt_sage(query_prompt, include_rag=True):
 
     if include_rag:
         rag_context = sage.retrieve(
-            query = query_prompt,
-            session_id = sage_RAG_id,
+            query=query_prompt,
+            session_id=sage_RAG_id,
             rag_threshold=sage_rag_t,
             rag_k=sage_rag_k
         )
 
         final_query = Template("$query\n$rag_context").substitute(
-                                query=query_prompt,
-                                rag_context=rag_context_string_simple(rag_context))
+            query=query_prompt,
+            rag_context=rag_context_string_simple(rag_context)
+        )
     else:
         final_query = query_prompt
 
     full_system_prompt = build_sage_system_prompt()
+    active_session_id = get_sage_session_id(include_rag=include_rag)
 
     response = sage.generate(
-        model = sage_model,
-        system = full_system_prompt,
-        query = final_query,
-        temperature = sage_temperature,
-        session_id = sage_session_id,
-        lastk=sage_lastk, # the citation proccess usually take three prompts, unsure if this is helpful
+        model=sage_model,
+        system=full_system_prompt,
+        query=final_query,
+        temperature=sage_temperature,
+        session_id=active_session_id,
+        lastk=sage_lastk,
     )
 
     return response, rag_context
 
+
 def get_intro():
-    response, _ = prompt_sage(sage_intro, include_rag=False)
+    full_system_prompt = build_sage_system_prompt()
+
+    response = sage.generate(
+        model=sage_model,
+        system=full_system_prompt,
+        query=sage_intro,
+        temperature=sage_temperature,
+        session_id=sage_intro_session_id,
+        lastk=0,
+    )
+
     return response["result"]
 
 def get_source(rag_context):
@@ -284,12 +305,14 @@ def get_source(rag_context):
     response, _ = prompt_sage(citation_prompt)
     return response["result"]
     
-def chat_with_sage(user_message):
-    response, rag_context = prompt_sage(user_message)
+def chat_with_sage(user_message, mode="grounded"):
+    use_rag = (mode == "grounded")
+
+    response, rag_context = prompt_sage(user_message, include_rag=use_rag)
     answer = response["result"]
 
     sources = None
-    if len(rag_context) > 0:
+    if use_rag and len(rag_context) > 0:
         sources = get_source(rag_context)
     else:
         warning = (
@@ -299,12 +322,12 @@ def chat_with_sage(user_message):
         )
         answer = f"{answer}\n\n---\n{warning}"
 
-
     return {
         "answer": answer,
         "sources": sources,
-        "used_rag": len(rag_context) > 0,
-        "rag_context": rag_context
+        "used_rag": use_rag and len(rag_context) > 0,
+        "rag_context": rag_context,
+        "mode": mode
     }
 
 ### ----------------------------------------------------------------------------------------------------
@@ -366,7 +389,7 @@ def run_cli():
             log_user(file, usr)
 
             # Core chat call
-            result = chat_with_sage(usr)
+            result = chat_with_sage(usr, mode="grounded")
 
             # Log and print answer
             log_sage(file, result["answer"], result["rag_context"])
