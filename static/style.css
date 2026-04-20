@@ -8,7 +8,7 @@ body {
   margin: 0;
   height: 100%;
   font-family: 'Inter', sans-serif;
-  background: #edf1f5;
+  background: linear-gradient(180deg, #f3faf7 0%, #edf1f5 100%);
   color: #1f2937;
 }
 
@@ -75,9 +75,9 @@ body {
 }
 
 .sidebar-toggle:hover {
-  background: #f8fafc;
+  background: #f7fbf9;
   color: #111827;
-  border-color: #c9d3df;
+  border-color: #c9dcd4;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
 }
 
@@ -101,7 +101,7 @@ body {
 
 /* increase max width of message bubbles */
 .app-shell.sidebar-collapsed .message {
-  max-width: 95%; /* was ~760px before */
+  max-width: 95%;
 }
 
 /* expand citations area to match */
@@ -113,11 +113,11 @@ body {
 /* left sidebar */
 /**************************************************/
 
-/* style the cool blue-gray sidebar */
+/* style the cool green-blue sidebar */
 .sidebar {
   width: 380px;
   flex-shrink: 0;
-  background: #e9eff5;
+  background: linear-gradient(180deg, #e6f4ef 0%, #eef3f7 100%);
   border-right: 1px solid #d7dee7;
   padding: 24px 22px 20px;
   display: flex;
@@ -147,7 +147,12 @@ body {
   border: 1px solid #d6dde5;
   border-radius: 20px;
   padding: 18px 20px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+  transition: all 0.15s ease;
+}
+
+.sidebar-card:hover {
+  transform: translateY(-1px);
 }
 
 .sidebar-card h2 {
@@ -179,8 +184,8 @@ body {
 
 .sidebar-list li {
   position: relative;
-  padding-left: 32px;
-  margin-bottom: 14px;
+  padding-left: 16px;
+  margin-bottom: 12px;
   font-size: 13px;
   line-height: 1.45;
   color: #5f7085;
@@ -196,8 +201,8 @@ body {
   position: absolute;
   left: 0;
   top: 4px;
-  width: 15px;
-  height: 15px;
+  width: 4px;
+  height: 4px;
   border: 2px solid #4d9a89;
   border-radius: 999px;
   background: transparent;
@@ -208,13 +213,13 @@ body {
   margin-top: 10px;
 }
 
-/* style the expandable privacy button */
+/* style the expandable button */
 .expand-toggle {
   margin-top: 10px;
   padding: 0;
   border: none;
   background: none;
-  color: #4d9a89;
+  color: #3f8f7e;
   font-family: 'Inter', sans-serif;
   font-size: 13px;
   font-weight: 500;
@@ -238,7 +243,7 @@ body {
 /* keep the emergency alert pinned toward the bottom */
 .sidebar-alert {
   margin-top: auto;
-  background: #fff7f6;
+  background: linear-gradient(180deg, #fff8f7 0%, #fff3f1 100%);
   border: 1px solid #f1c9c2;
   color: #e2574c;
   border-radius: 18px;
@@ -269,7 +274,7 @@ body {
 /* style the top header above the chat */
 .header {
   padding: 16px 24px;
-  background: #f8fafb;
+  background: linear-gradient(180deg, #f6fbf8 0%, #f8fafb 100%);
   border-bottom: 1px solid #d7dee7;
 }
 
@@ -306,7 +311,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  background: #f8fafb;
+  background: transparent;
 }
 
 /**************************************************/
@@ -349,15 +354,15 @@ body {
 /* style user messages */
 .message.user {
   align-self: flex-end;
-  background: #dfeee9;
+  background: linear-gradient(135deg, #e3f4ee 0%, #d7ebe5 100%);
   color: #1f2937;
-  border: 1px solid #d3e4de;
+  border: 1px solid #cfe3dd;
 }
 
 /* style sage messages */
 .message.sage {
   align-self: flex-start;
-  background: #f2f4f7;
+  background: #f7f9fb;
   color: #1f2937;
   border: 1px solid #e7eaee;
 }
@@ -469,7 +474,7 @@ body {
 .sources {
   font-size: 14px;
   color: #444;
-  background: #ffffff;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbfa 100%);
   border: 1px solid #d6dde5;
   border-left: 4px solid #3f8f7e;
   border-radius: 14px;
@@ -617,7 +622,7 @@ body {
   border: 1px solid #d6dde5;
   border-radius: 999px;
   outline: none;
-  background: #f3f5f7;
+  background: #f3f8f5;
   color: #1f2937;
 }
 
@@ -628,7 +633,8 @@ body {
 
 .input-area input:focus {
   background: #ffffff;
-  border-color: #bfd6cf;
+  border-color: #9fd4c3;
+  box-shadow: 0 0 0 3px rgba(63, 143, 126, 0.08);
 }
 
 /* restore the original dark send button style */
@@ -638,13 +644,13 @@ body {
   font-family: 'Inter', sans-serif;
   border: none;
   border-radius: 12px;
-  background: #1f2937;
+  background: linear-gradient(135deg, #223247 0%, #1f2937 100%);
   color: white;
   cursor: pointer;
 }
 
 .input-area button:hover {
-  background: #111827;
+  background: linear-gradient(135deg, #1b2736 0%, #111827 100%);
 }
 
 /**************************************************/
@@ -684,4 +690,255 @@ body {
   .citations-area {
     width: 88%;
   }
+}
+
+/**************************************************/
+/* right settings sidebar */
+/**************************************************/
+
+.settings-sidebar {
+  width: 250px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #eef7f4 0%, #f4f7fb 100%);
+  border-left: 1px solid #d7dee7;
+  padding: 20px 16px;
+}
+
+.settings-card {
+  background: #ffffff;
+  border: 1px solid #cfe3dd;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 4px 14px rgba(63, 143, 126, 0.08);
+  transition: all 0.15s ease;
+}
+
+.settings-card:hover {
+  transform: translateY(-1px);
+}
+
+.settings-header h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.mode-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #5f7085;
+  cursor: pointer;
+}
+
+.mode-option input[type="radio"] {
+  accent-color: #2f7f6f;
+}
+
+/**************************************************/
+/* info tooltip */
+/**************************************************/
+
+.info-tooltip {
+  position: relative;
+}
+
+.info-button {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid #bfd0dc;
+  background: #ffffff;
+  color: #5f7085;
+  font-size: 11px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.tooltip-box {
+  display: none;
+  position: absolute;
+  top: 24px;
+  right: 0;
+  width: 220px;
+  background: #ffffff;
+  border: 1px solid #d6dde5;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #475467;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+  z-index: 50;
+}
+
+.info-tooltip:hover .tooltip-box {
+  display: block;
+}
+
+/**************************************************/
+/* welcome modal */
+/**************************************************/
+
+.welcome-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.32);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 200;
+}
+
+.welcome-modal.hidden {
+  display: none;
+}
+
+.welcome-card {
+  width: min(620px, 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbfa 100%);
+  border: 1px solid #cfe3dd;
+  border-radius: 22px;
+  padding: 24px 24px 20px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16);
+  position: relative;
+}
+
+.welcome-card h2 {
+  margin: 0 0 12px;
+  font-size: 24px;
+  line-height: 1.2;
+  color: #1f2937;
+}
+
+.welcome-card p {
+  margin: 0 0 14px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: #475467;
+}
+
+.welcome-section {
+  margin-top: 16px;
+}
+
+.welcome-section h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: #1f2937;
+}
+
+.welcome-section ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.welcome-section li {
+  margin-bottom: 8px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #5f7085;
+}
+
+.welcome-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #d6dde5;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #5f7085;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.welcome-close:hover {
+  background: #f7fbf9;
+}
+
+.welcome-start {
+  margin-top: 20px;
+  padding: 12px 18px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #223247 0%, #1f2937 100%);
+  color: white;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.welcome-start:hover {
+  background: linear-gradient(135deg, #1b2736 0%, #111827 100%);
+}
+
+/**************************************************/
+/* starter questions under intro */
+/**************************************************/
+
+.starter-questions {
+  width: min(760px, 100%);
+  margin-top: -6px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.starter-label {
+  font-size: 14px;
+  color: #5f7085;
+}
+
+.starter-question-button {
+  border: 1px solid #c9d8ea;
+  background: linear-gradient(135deg, #edf5ff 0%, #e6f0fb 100%);
+  color: #315b8a;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(49, 91, 138, 0.05);
+}
+
+.starter-question-button:hover {
+  background: linear-gradient(135deg, #e3efff 0%, #dbe9fb 100%);
+  border-color: #a9c4e5;
+  color: #244a74;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(49, 91, 138, 0.10);
+}
+
+.starter-question-button:active {
+  transform: translateY(0);
 }

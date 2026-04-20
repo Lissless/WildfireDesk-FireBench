@@ -26,11 +26,15 @@ def intro():
 def chat():
     data = request.get_json()
     user_message = data.get("message", "").strip()
+    mode = data.get("mode", "grounded").strip().lower()
 
     if not user_message:
         return jsonify({"error": "Message is required"}), 400
 
-    result = wildfire_desk.chat_with_sage(user_message)
+    if mode not in {"grounded", "general"}:
+        mode = "grounded"
+
+    result = wildfire_desk.chat_with_sage(user_message, mode=mode)
     return jsonify(result)
 
 

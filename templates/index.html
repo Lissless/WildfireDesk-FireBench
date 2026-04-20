@@ -114,6 +114,80 @@
         <button id="send-button">Send</button>
       </div>
     </main>
+
+    <!-- right sidebar for settings -->
+    <aside class="settings-sidebar">
+      <div class="settings-card">
+        <div class="settings-header">
+          <h2>Settings</h2>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-label-row">
+            <span class="settings-label">Response mode</span>
+
+            <div class="info-tooltip">
+              <button class="info-button" type="button" aria-label="More information">
+                i
+              </button>
+              <div class="tooltip-box">
+                Grounded in resources uses expert materials for more specific answers.
+                For a more general approach, switch to General.
+              </div>
+            </div>
+          </div>
+
+          <label class="mode-option">
+            <input type="radio" name="sage-mode" value="grounded" checked>
+            Grounded in resources
+          </label>
+
+          <label class="mode-option">
+            <input type="radio" name="sage-mode" value="general">
+            General response
+          </label>
+        </div>
+      </div>
+    </aside>
+
+    <!-- first-time welcome modal -->
+    <div id="welcome-modal" class="welcome-modal hidden">
+      <div class="welcome-card">
+        <button id="welcome-close" class="welcome-close" type="button" aria-label="Close tutorial">
+          ×
+        </button>
+
+        <h2>Welcome to Sage</h2>
+
+        <p>
+          Sage is here to help with wildfire recovery and community action. You can use it to think through next steps, compare options, and create practical materials like emails, plans, or meeting agendas.
+        </p>
+
+        <div class="welcome-section">
+          <h3>How to use Sage</h3>
+          <ul>
+            <li>Ask a question about recovery, organizing, housing, insurance, or rebuilding.</li>
+            <li>Sage will usually ask a few follow-up questions first so it can tailor the response.</li>
+            <li>Use Grounded in resources for answers based on expert materials and source citations.</li>
+            <li>Use General for a broader response that does not rely on the uploaded documents.</li>
+          </ul>
+        </div>
+
+        <div class="welcome-section">
+          <h3>Try asking</h3>
+          <ul>
+            <li>How do I organize my neighbors to rebuild safely?</li>
+            <li>What should I do if my insurance claim is delayed?</li>
+            <li>Help me draft an outreach message for a community meeting.</li>
+          </ul>
+        </div>
+
+        <button id="welcome-start" class="welcome-start" type="button">
+          Got it
+        </button>
+      </div>
+    </div>
+
   </div>
 
   <!-- markdown parser -->
@@ -131,6 +205,14 @@
     const introMessage = document.getElementById("intro-message");
     const appShell = document.querySelector(".app-shell");
     const sidebarToggle = document.getElementById("sidebar-toggle");
+
+    // starter questions shown under the intro message
+    const starterQuestions = [
+      "How do I organize my neighbors after a wildfire?",
+      "How can I start a community group for recovery efforts?",
+      "What should we include in a first neighborhood meeting?",
+      "How do we coordinate rebuilding efforts as a group?"
+    ];
 
     /**************************************************/
     /* sidebar collapse */
@@ -466,6 +548,41 @@
       }
     }
 
+  // add clickable starter questions under the intro message
+  function addStarterQuestions() {
+    const wrapper = document.createElement("div");
+    wrapper.className = "starter-questions";
+    wrapper.id = "starter-questions";
+
+    const label = document.createElement("div");
+    label.className = "starter-label";
+    label.textContent = "You can also ask:";
+    wrapper.appendChild(label);
+
+    starterQuestions.forEach((question) => {
+      const button = document.createElement("button");
+      button.className = "starter-question-button";
+      button.type = "button";
+      button.textContent = question;
+
+      // click to send the question right away, then remove the starter chips
+      button.addEventListener("click", () => {
+        userInput.value = question;
+
+        const starterBlock = document.getElementById("starter-questions");
+        if (starterBlock) {
+          starterBlock.remove();
+        }
+
+        sendMessage();
+      });
+
+      wrapper.appendChild(button);
+    });
+
+    chat.appendChild(wrapper);
+  }
+
     /**************************************************/
     /* api calls */
     /**************************************************/
@@ -475,55 +592,88 @@
       try {
         const response = await fetch("/intro");
         const data = await response.json();
+
+        console.log("intro response:", data);
+
         introMessage.remove();
         addMessage(data.intro, "sage", null, false);
-      } catch {
+        addStarterQuestions();
+      } catch (error) {
+        console.error("intro failed:", error);
         introMessage.textContent = "Could not load Sage.";
       }
     }
 
     // send the user's message to the backend and show sage's response
-    async function sendMessage() {
-      const message = userInput.value.trim();
-      if (!message) return;
+  async function sendMessage() {
+    const message = userInput.value.trim();
+    if (!message) return;
 
-      addMessage(message, "user");
-      userInput.value = "";
+    // get selected mode from toggle
+    const selectedMode = document.querySelector('input[name="sage-mode"]:checked').value;
 
-      // show temporary loading state
-      const loadingWrapper = document.createElement("div");
-      loadingWrapper.className = "message-wrapper sage";
+    addMessage(message, "user");
+    userInput.value = "";
 
-      const loading = document.createElement("div");
-      loading.className = "message sage loading";
-      loading.textContent = "Sage is thinking...";
+    // show temporary loading state
+    const loadingWrapper = document.createElement("div");
+    loadingWrapper.className = "message-wrapper sage";
 
-      loadingWrapper.appendChild(loading);
-      chat.appendChild(loadingWrapper);
-      chat.scrollTop = chat.scrollHeight;
+    const loading = document.createElement("div");
+    loading.className = "message sage loading";
+    loading.textContent = "Sage is thinking...";
 
-      try {
-        const response = await fetch("/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message })
-        });
+    loadingWrapper.appendChild(loading);
+    chat.appendChild(loadingWrapper);
+    chat.scrollTop = chat.scrollHeight;
 
-        const data = await response.json();
-        loadingWrapper.remove();
+    try {
+      const response = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message,
+          mode: selectedMode
+        })
+      });
 
-        if (data.error) {
-          addMessage(data.error, "sage");
-          return;
-        }
+      const data = await response.json();
+      loadingWrapper.remove();
 
-        addMessage(data.answer, "sage", data.sources, true);
-
-      } catch {
-        loadingWrapper.remove();
-        addMessage("Something went wrong while contacting Sage.", "sage");
+      if (data.error) {
+        addMessage(data.error, "sage");
+        return;
       }
+
+      addMessage(data.answer, "sage", data.sources, true);
+
+    } catch {
+      loadingWrapper.remove();
+      addMessage("Something went wrong while contacting Sage.", "sage");
     }
+  }
+
+  /**************************************************/
+  /* welcome modal */
+  /**************************************************/
+
+  const welcomeModal = document.getElementById("welcome-modal");
+  const welcomeClose = document.getElementById("welcome-close");
+  const welcomeStart = document.getElementById("welcome-start");
+
+  // show modal only the first time this browser loads the page
+  function maybeShowWelcomeModal() {
+    welcomeModal.classList.remove("hidden");
+  }
+
+  // close modal and remember choice
+  function closeWelcomeModal() {
+    welcomeModal.classList.add("hidden");
+    localStorage.setItem("sageWelcomeSeen", "true");
+  }
+
+  welcomeClose.addEventListener("click", closeWelcomeModal);
+  welcomeStart.addEventListener("click", closeWelcomeModal);
 
     /**************************************************/
     /* event listeners */
@@ -539,6 +689,7 @@
 
     // load intro message when page opens
     loadIntro();
+    maybeShowWelcomeModal();
   </script>
 </body>
 </html>
