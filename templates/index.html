@@ -1,76 +1,488 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- basic page metadata -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WildfireDesk</title>
+
+  <!-- connect external css file -->
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- import inter font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="app">
-    <div class="header">
-      <h1>WildfireDesk</h1>
-      <p>Ask Sage about wildfire recovery, next steps, or community action.</p>
-    </div>
+  <div class="app-shell">
 
-    <div id="chat" class="chat-container">
-      <div class="message sage loading" id="intro-message">Loading Sage...</div>
-    </div>
+    <!-- left sidebar with product info and privacy -->
+    <aside class="sidebar">
 
-    <div class="input-area">
-      <input
-        id="user-input"
-        type="text"
-        placeholder="Type your question here..."
-      />
-      <button id="send-button">Send</button>
-    </div>
+      <!-- product title and short description -->
+      <div class="sidebar-brand">
+        <h1>WildfireDesk</h1>
+      </div>
+
+      <!-- concise mission statement -->
+      <div class="sidebar-card">
+        <h2>About Sage</h2>
+        <p>
+          Sage’s mission is to support wildfire recovery by helping people take informed action and work together with their communities to rebuild and move forward.
+        </p>
+
+        <p style="margin-top: 10px;">
+          It is a <strong>non-partisan, non-commercial</strong> AI assistant focused on practical guidance and community-driven solutions.
+        </p>
+      </div>
+
+      <!-- main ways sage can help -->
+      <div class="sidebar-card">
+        <h2>How Sage Can Help</h2>
+
+        <p>
+          Sage helps you understand your options and take practical steps after a wildfire. It supports both individual decisions and community efforts so you can move forward with clarity.
+        </p>
+
+        <!-- toggle button -->
+        <button class="expand-toggle" type="button" onclick="togglePrivacy(this)">
+          See more <span class="arrow">▾</span>
+        </button>
+
+        <!-- hidden content -->
+        <div class="expand-content">
+          <ul class="sidebar-list">
+            <li>Understand your options for FEMA, insurance, and recovery</li>
+            <li>Plan next steps for housing, rebuilding, and navigating systems</li>
+            <li>Organize with neighbors and coordinate community efforts</li>
+            <li>Create materials like meeting agendas, outreach messages, and action plans</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- privacy section -->
+      <div class="sidebar-card">
+        <h2>Privacy</h2>
+        <p>
+          Your privacy matters. Sage is designed to support you without storing personal information.
+        </p>
+
+        <!-- toggle button for expanded privacy details -->
+        <button class="expand-toggle" type="button" onclick="togglePrivacy(this)">
+          See more <span class="arrow">▾</span>
+        </button>
+
+        <!-- hidden content shown when expanded -->
+        <div class="expand-content">
+          <ul class="sidebar-list">
+            <li>We do not store your personal data or chat history.</li>
+            <li>Your messages are only used to generate responses during this session.</li>
+            <li>Conversations are not saved, shared, or used for training.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- emergency callout fixed to bottom -->
+      <div class="sidebar-alert">
+        If you are in immediate danger, call 911.
+      </div>
+    </aside>
+
+    <!-- sidebar collapse toggle -->
+    <button id="sidebar-toggle" class="sidebar-toggle" type="button">‹</button>
+
+    <!-- main chat area -->
+    <main class="app">
+
+      <!-- top header for sage -->
+      <div class="header">
+        <div class="chat-title-row">
+          <div>
+            <h2>Sage</h2>
+            <p>Ask Sage about wildfire recovery, next steps, or community action.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- chat messages render here -->
+      <div id="chat" class="chat-container">
+        <div class="message sage loading" id="intro-message">Loading Sage...</div>
+      </div>
+
+      <!-- input row for sending user messages -->
+      <div class="input-area">
+        <input id="user-input" type="text" placeholder="Ask Sage a question..." />
+        <button id="send-button">Send</button>
+      </div>
+    </main>
   </div>
 
+  <!-- markdown parser -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
   <script>
+    /**************************************************/
+    /* main dom references */
+    /**************************************************/
+
+    // grab the main page elements
     const chat = document.getElementById("chat");
     const userInput = document.getElementById("user-input");
     const sendButton = document.getElementById("send-button");
     const introMessage = document.getElementById("intro-message");
+    const appShell = document.querySelector(".app-shell");
+    const sidebarToggle = document.getElementById("sidebar-toggle");
 
-    function addMessage(text, sender, sources = null) {
-    const wrapper = document.createElement("div");
-    wrapper.className = `message ${sender}`;
+    /**************************************************/
+    /* sidebar collapse */
+    /**************************************************/
 
-    // render markdown properly
-    wrapper.innerHTML = marked.parse(text);
+    // toggle full sidebar open and close
+    sidebarToggle.addEventListener("click", () => {
+      const collapsed = appShell.classList.toggle("sidebar-collapsed");
+      sidebarToggle.textContent = collapsed ? "›" : "‹";
+    });
 
-    if (sources) {
-        const sourcesDiv = document.createElement("div");
-        sourcesDiv.className = "sources";
+    /**************************************************/
+    /* privacy expand */
+    /**************************************************/
 
-        if (typeof sources === "string") {
-        sourcesDiv.innerHTML = marked.parse(sources);
+    // expand or collapse the privacy section
+    function togglePrivacy(button) {
+      const content = button.parentElement.querySelector(".expand-content");
+      const isOpen = content.classList.contains("open");
 
-        } else {
-        sourcesDiv.textContent = JSON.stringify(sources, null, 2);
-        }
-
-        wrapper.appendChild(sourcesDiv);
+      if (isOpen) {
+        content.classList.remove("open");
+        button.innerHTML = 'See more <span class="arrow">▾</span>';
+      } else {
+        content.classList.add("open");
+        button.innerHTML = 'See less <span class="arrow">▴</span>';
+      }
     }
 
-    chat.appendChild(wrapper);
-    chat.scrollTop = chat.scrollHeight;
+    /**************************************************/
+    /* download and editing helpers */
+    /**************************************************/
+
+    // create and download a word document from html content
+    function downloadWordDoc(filename, htmlContent) {
+      const fullHtml = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office"
+              xmlns:w="urn:schemas-microsoft-com:office:word"
+              xmlns="http://www.w3.org/TR/REC-html40">
+          <head>
+            <meta charset="utf-8">
+            <title>${filename}</title>
+          </head>
+          <body>
+            ${htmlContent}
+          </body>
+        </html>
+      `;
+
+      const blob = new Blob(['\ufeff', fullHtml], { type: 'application/msword' });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      URL.revokeObjectURL(url);
     }
 
+    // size the textarea to match the content, but cap it at 70% of screen height
+    function autoResizeTextarea(textarea) {
+      textarea.style.height = "auto";
+      const maxHeight = window.innerHeight * 0.7;
+      textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + "px";
+    }
+
+    /**************************************************/
+    /* citation formatting */
+    /**************************************************/
+
+    function formatSources(sources) {
+      if (typeof sources !== "string") {
+        return `<p>${JSON.stringify(sources, null, 2)}</p>`;
+      }
+
+      const text = sources.trim();
+
+      if (text.includes("<")) {
+        return sources;
+      }
+
+      /**************************************************/
+      /* split intro text from citations */
+      /**************************************************/
+
+      const firstCitationMatch = text.match(/(?:^|\n)\s*1[\).\s]/);
+
+      let introText = "";
+      let citationsText = text;
+
+      if (firstCitationMatch && firstCitationMatch.index > 0) {
+        introText = text.slice(0, firstCitationMatch.index).trim();
+        citationsText = text.slice(firstCitationMatch.index).trim();
+      }
+
+      /**************************************************/
+      /* split only on numbered citations */
+      /**************************************************/
+
+      const citationBlocks = citationsText
+        .split(/\n(?=\s*\d+[\).\s])/)
+        .map(block => block.trim())
+        .filter(block => /^\d+[\).\s]/.test(block));
+
+      if (citationBlocks.length === 0) {
+        return marked.parse(sources);
+      }
+
+      /**************************************************/
+      /* build intro paragraph */
+      /**************************************************/
+
+      const introHtml = introText
+        ? `<p>${introText.replace(/\n/g, "<br>")}</p>`
+        : "";
+
+      /**************************************************/
+      /* build citation blocks */
+      /**************************************************/
+
+      const citationsHtml = citationBlocks.map((block, index) => {
+        const cleaned = block.replace(/^\d+[\).\s]+/, "").trim();
+
+        return `
+          <div class="source-item">
+            <div class="source-number">${index + 1}</div>
+            <div class="source-body">
+              <div class="source-text">${cleaned}</div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      /**************************************************/
+      /* return final html */
+      /**************************************************/
+
+      return `
+        ${introHtml}
+        <div class="sources-card">
+          <div class="sources-heading">SOURCES</div>
+          ${citationsHtml}
+        </div>
+      `;
+    }
+    /**************************************************/
+    /* message rendering */
+    /**************************************************/
+
+    // add a message bubble to the chat
+    function addMessage(text, sender, sources = null, showActions = true) {
+      const wrapper = document.createElement("div");
+      wrapper.className = `message-wrapper ${sender}`;
+
+      // create the main message bubble
+      const bubble = document.createElement("div");
+      bubble.className = `message ${sender}`;
+
+      // create the rendered markdown content
+      const contentDiv = document.createElement("div");
+      contentDiv.className = "message-content";
+      contentDiv.innerHTML = marked.parse(text);
+      bubble.appendChild(contentDiv);
+
+      // only sage responses get action buttons
+      let sourcesDiv = null;
+
+      if (sender === "sage" && showActions) {
+        const actions = document.createElement("div");
+        actions.className = "message-actions";
+
+        const copyBtn = document.createElement("button");
+        copyBtn.className = "action-button";
+        copyBtn.textContent = "Copy";
+
+        const editBtn = document.createElement("button");
+        editBtn.className = "action-button";
+        editBtn.textContent = "Edit";
+
+        const downloadBtn = document.createElement("button");
+        downloadBtn.className = "action-button";
+        downloadBtn.textContent = "Download";
+
+        let isEditing = false;
+        let textarea = null;
+        let originalText = text;
+
+        // copy the visible text of the message
+        copyBtn.onclick = async () => {
+          await navigator.clipboard.writeText(contentDiv.innerText);
+          copyBtn.textContent = "Copied";
+          setTimeout(() => {
+            copyBtn.textContent = "Copy";
+          }, 1500);
+        };
+
+        // switch into edit mode or save edited content
+        editBtn.onclick = () => {
+          if (!isEditing) {
+            isEditing = true;
+
+            // create the textarea with the original markdown text
+            textarea = document.createElement("textarea");
+            textarea.className = "message-editor";
+            textarea.value = originalText;
+
+            // replace rendered content with the textarea
+            bubble.replaceChild(textarea, contentDiv);
+            bubble.classList.add("editing");
+
+            editBtn.textContent = "Save";
+
+            // wait until textarea is in the dom, then size it to match message height
+            requestAnimationFrame(() => {
+              autoResizeTextarea(textarea);
+              textarea.focus();
+              textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+            });
+
+            // resize while user types
+            textarea.addEventListener("input", () => autoResizeTextarea(textarea));
+
+            // add cancel button if it does not already exist
+            let cancelBtn = actions.querySelector('[data-role="cancel"]');
+
+            if (!cancelBtn) {
+              cancelBtn = document.createElement("button");
+              cancelBtn.className = "action-button cancel-button";
+              cancelBtn.textContent = "Cancel";
+              cancelBtn.dataset.role = "cancel";
+
+              // put original rendered message back if user cancels
+              cancelBtn.onclick = () => {
+                isEditing = false;
+                contentDiv.innerHTML = marked.parse(originalText);
+                bubble.replaceChild(contentDiv, textarea);
+                bubble.classList.remove("editing");
+                editBtn.textContent = "Edit";
+                cancelBtn.remove();
+              };
+
+              actions.appendChild(cancelBtn);
+            }
+
+          } else {
+            isEditing = false;
+
+            // save updated text and render it as markdown again
+            originalText = textarea.value;
+            contentDiv.innerHTML = marked.parse(originalText);
+
+            bubble.replaceChild(contentDiv, textarea);
+            bubble.classList.remove("editing");
+            editBtn.textContent = "Edit";
+
+            // remove cancel button after saving
+            const cancelBtn = actions.querySelector('[data-role="cancel"]');
+            if (cancelBtn) cancelBtn.remove();
+          }
+        };
+
+        // download the message content, and sources if they exist
+        downloadBtn.onclick = () => {
+          const temp = document.createElement("div");
+          temp.innerHTML = contentDiv.innerHTML;
+
+          if (sourcesDiv) {
+            temp.appendChild(document.createElement("hr"));
+            temp.appendChild(sourcesDiv.cloneNode(true));
+          }
+
+          downloadWordDoc("sage-response.doc", temp.innerHTML);
+        };
+
+        actions.appendChild(copyBtn);
+        actions.appendChild(editBtn);
+        actions.appendChild(downloadBtn);
+        bubble.appendChild(actions);
+      }
+
+      wrapper.appendChild(bubble);
+
+      // add collapsible sources outside the message bubble
+      if (sources) {
+        const citationsArea = document.createElement("div");
+        citationsArea.className = "citations-area";
+
+        const sourcesToggle = document.createElement("button");
+        sourcesToggle.className = "sources-toggle";
+        sourcesToggle.type = "button";
+        sourcesToggle.innerHTML = 'Where did this information come from? <span class="sources-arrow">▾</span>';
+
+        sourcesDiv = document.createElement("div");
+        sourcesDiv.className = "sources collapsible-sources";
+        sourcesDiv.innerHTML = formatSources(sources);
+
+        sourcesToggle.addEventListener("click", () => {
+          const isOpen = sourcesDiv.classList.contains("open");
+          const arrow = sourcesToggle.querySelector(".sources-arrow");
+
+          if (isOpen) {
+            sourcesDiv.classList.remove("open");
+            arrow.textContent = "▾";
+          } else {
+            sourcesDiv.classList.add("open");
+            arrow.textContent = "▴";
+
+            // scroll to the bottom of the expanded citations block
+            requestAnimationFrame(() => {
+              sourcesDiv.scrollIntoView({ behavior: "smooth", block: "end" });
+            });
+          }
+        });
+
+        citationsArea.appendChild(sourcesToggle);
+        citationsArea.appendChild(sourcesDiv);
+        wrapper.appendChild(citationsArea);
+      }
+
+      // add message to chat
+      chat.appendChild(wrapper);
+
+      // for bot replies, bring the top of the reply into view automatically
+      if (sender === "sage") {
+        requestAnimationFrame(() => {
+          wrapper.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      } else {
+        chat.scrollTop = chat.scrollHeight;
+      }
+    }
+
+    /**************************************************/
+    /* api calls */
+    /**************************************************/
+
+    // load the intro message from the backend
     async function loadIntro() {
       try {
         const response = await fetch("/intro");
         const data = await response.json();
         introMessage.remove();
-        addMessage(data.intro, "sage");
-      } catch (error) {
+        addMessage(data.intro, "sage", null, false);
+      } catch {
         introMessage.textContent = "Could not load Sage.";
       }
     }
 
+    // send the user's message to the backend and show sage's response
     async function sendMessage() {
       const message = userInput.value.trim();
       if (!message) return;
@@ -78,44 +490,54 @@
       addMessage(message, "user");
       userInput.value = "";
 
+      // show temporary loading state
+      const loadingWrapper = document.createElement("div");
+      loadingWrapper.className = "message-wrapper sage";
+
       const loading = document.createElement("div");
       loading.className = "message sage loading";
       loading.textContent = "Sage is thinking...";
-      chat.appendChild(loading);
+
+      loadingWrapper.appendChild(loading);
+      chat.appendChild(loadingWrapper);
       chat.scrollTop = chat.scrollHeight;
 
       try {
         const response = await fetch("/chat", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message })
         });
 
         const data = await response.json();
-        loading.remove();
+        loadingWrapper.remove();
 
         if (data.error) {
           addMessage(data.error, "sage");
           return;
         }
 
-        addMessage(data.answer, "sage", data.sources);
-      } catch (error) {
-        loading.remove();
+        addMessage(data.answer, "sage", data.sources, true);
+
+      } catch {
+        loadingWrapper.remove();
         addMessage("Something went wrong while contacting Sage.", "sage");
       }
     }
 
+    /**************************************************/
+    /* event listeners */
+    /**************************************************/
+
+    // click send button to submit message
     sendButton.addEventListener("click", sendMessage);
 
-    userInput.addEventListener("keypress", function(event) {
-      if (event.key === "Enter") {
-        sendMessage();
-      }
+    // press enter to submit message
+    userInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") sendMessage();
     });
 
+    // load intro message when page opens
     loadIntro();
   </script>
 </body>
