@@ -110,7 +110,7 @@
 
       <!-- input row for sending user messages -->
       <div class="input-area">
-        <input id="user-input" type="text" placeholder="Ask Sage a question..." />
+        <textarea id="user-input" rows="2" placeholder="Ask Sage a question..."></textarea>
         <button id="send-button">Send</button>
       </div>
     </main>
@@ -193,360 +193,380 @@
   <!-- markdown parser -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-  <script>
-    /**************************************************/
-    /* main dom references */
-    /**************************************************/
+<script>
+  /**************************************************/
+  /* main dom references */
+  /**************************************************/
 
-    // grab the main page elements
-    const chat = document.getElementById("chat");
-    const userInput = document.getElementById("user-input");
-    const sendButton = document.getElementById("send-button");
-    const introMessage = document.getElementById("intro-message");
-    const appShell = document.querySelector(".app-shell");
-    const sidebarToggle = document.getElementById("sidebar-toggle");
+  // grab the main page elements
+  const chat = document.getElementById("chat");
+  const userInput = document.getElementById("user-input");
+  const sendButton = document.getElementById("send-button");
+  const introMessage = document.getElementById("intro-message");
+  const appShell = document.querySelector(".app-shell");
+  const sidebarToggle = document.getElementById("sidebar-toggle");
 
-    // starter questions shown under the intro message
-    const starterQuestions = [
-      "How do I organize my neighbors after a wildfire?",
-      "How can I start a community group for recovery efforts?",
-      "What should we include in a first neighborhood meeting?",
-      "How do we coordinate rebuilding efforts as a group?"
-    ];
+  // starter questions shown under the intro message
+  const starterQuestions = [
+    "How do I organize my neighbors after a wildfire?",
+    "How can I start a community group for recovery efforts?",
+    "What should we include in a first neighborhood meeting?",
+    "How do we coordinate rebuilding efforts as a group?"
+  ];
 
-    /**************************************************/
-    /* sidebar collapse */
-    /**************************************************/
+  /**************************************************/
+  /* sidebar collapse */
+  /**************************************************/
 
-    // toggle full sidebar open and close
-    sidebarToggle.addEventListener("click", () => {
-      const collapsed = appShell.classList.toggle("sidebar-collapsed");
-      sidebarToggle.textContent = collapsed ? "›" : "‹";
-    });
+  // toggle full sidebar open and close
+  sidebarToggle.addEventListener("click", () => {
+    const collapsed = appShell.classList.toggle("sidebar-collapsed");
+    sidebarToggle.textContent = collapsed ? "›" : "‹";
+  });
 
-    /**************************************************/
-    /* privacy expand */
-    /**************************************************/
+  /**************************************************/
+  /* privacy expand */
+  /**************************************************/
 
-    // expand or collapse the privacy section
-    function togglePrivacy(button) {
-      const content = button.parentElement.querySelector(".expand-content");
-      const isOpen = content.classList.contains("open");
+  // expand or collapse the privacy section
+  function togglePrivacy(button) {
+    const content = button.parentElement.querySelector(".expand-content");
+    const isOpen = content.classList.contains("open");
 
-      if (isOpen) {
-        content.classList.remove("open");
-        button.innerHTML = 'See more <span class="arrow">▾</span>';
-      } else {
-        content.classList.add("open");
-        button.innerHTML = 'See less <span class="arrow">▴</span>';
-      }
+    if (isOpen) {
+      content.classList.remove("open");
+      button.innerHTML = 'See more <span class="arrow">▾</span>';
+    } else {
+      content.classList.add("open");
+      button.innerHTML = 'See less <span class="arrow">▴</span>';
+    }
+  }
+
+  /**************************************************/
+  /* download and editing helpers */
+  /**************************************************/
+
+  // create and download a word document from html content
+  function downloadWordDoc(filename, htmlContent) {
+    const fullHtml = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office"
+            xmlns:w="urn:schemas-microsoft-com:office:word"
+            xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+          <meta charset="utf-8">
+          <title>${filename}</title>
+        </head>
+        <body>
+          ${htmlContent}
+        </body>
+      </html>
+    `;
+
+    const blob = new Blob(['\ufeff', fullHtml], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
+  }
+
+  // size the textarea to match the content, but cap it at 70% of screen height
+  function autoResizeTextarea(textarea) {
+    textarea.style.height = "auto";
+    const maxHeight = window.innerHeight * 0.7;
+    textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + "px";
+  }
+
+  /**************************************************/
+  /* citation formatting */
+  /**************************************************/
+
+  function formatSources(sources) {
+    if (typeof sources !== "string") {
+      return `<p>${JSON.stringify(sources, null, 2)}</p>`;
+    }
+
+    const text = sources.trim();
+
+    if (text.includes("<")) {
+      return sources;
     }
 
     /**************************************************/
-    /* download and editing helpers */
+    /* split intro text from citations */
     /**************************************************/
 
-    // create and download a word document from html content
-    function downloadWordDoc(filename, htmlContent) {
-      const fullHtml = `
-        <html xmlns:o="urn:schemas-microsoft-com:office:office"
-              xmlns:w="urn:schemas-microsoft-com:office:word"
-              xmlns="http://www.w3.org/TR/REC-html40">
-          <head>
-            <meta charset="utf-8">
-            <title>${filename}</title>
-          </head>
-          <body>
-            ${htmlContent}
-          </body>
-        </html>
-      `;
+    const firstCitationMatch = text.match(/(?:^|\n)\s*1[\).\s]/);
 
-      const blob = new Blob(['\ufeff', fullHtml], { type: 'application/msword' });
-      const url = URL.createObjectURL(blob);
+    let introText = "";
+    let citationsText = text;
 
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      URL.revokeObjectURL(url);
-    }
-
-    // size the textarea to match the content, but cap it at 70% of screen height
-    function autoResizeTextarea(textarea) {
-      textarea.style.height = "auto";
-      const maxHeight = window.innerHeight * 0.7;
-      textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + "px";
+    if (firstCitationMatch && firstCitationMatch.index > 0) {
+      introText = text.slice(0, firstCitationMatch.index).trim();
+      citationsText = text.slice(firstCitationMatch.index).trim();
     }
 
     /**************************************************/
-    /* citation formatting */
+    /* split only on numbered citations */
     /**************************************************/
 
-    function formatSources(sources) {
-      if (typeof sources !== "string") {
-        return `<p>${JSON.stringify(sources, null, 2)}</p>`;
-      }
+    const citationBlocks = citationsText
+      .split(/\n(?=\s*\d+[\).\s])/)
+      .map(block => block.trim())
+      .filter(block => /^\d+[\).\s]/.test(block));
 
-      const text = sources.trim();
+    if (citationBlocks.length === 0) {
+      return marked.parse(sources);
+    }
 
-      if (text.includes("<")) {
-        return sources;
-      }
+    /**************************************************/
+    /* build intro paragraph */
+    /**************************************************/
 
-      /**************************************************/
-      /* split intro text from citations */
-      /**************************************************/
+    const introHtml = introText
+      ? `<p>${introText.replace(/\n/g, "<br>")}</p>`
+      : "";
 
-      const firstCitationMatch = text.match(/(?:^|\n)\s*1[\).\s]/);
+    /**************************************************/
+    /* build citation blocks */
+    /**************************************************/
 
-      let introText = "";
-      let citationsText = text;
-
-      if (firstCitationMatch && firstCitationMatch.index > 0) {
-        introText = text.slice(0, firstCitationMatch.index).trim();
-        citationsText = text.slice(firstCitationMatch.index).trim();
-      }
-
-      /**************************************************/
-      /* split only on numbered citations */
-      /**************************************************/
-
-      const citationBlocks = citationsText
-        .split(/\n(?=\s*\d+[\).\s])/)
-        .map(block => block.trim())
-        .filter(block => /^\d+[\).\s]/.test(block));
-
-      if (citationBlocks.length === 0) {
-        return marked.parse(sources);
-      }
-
-      /**************************************************/
-      /* build intro paragraph */
-      /**************************************************/
-
-      const introHtml = introText
-        ? `<p>${introText.replace(/\n/g, "<br>")}</p>`
-        : "";
-
-      /**************************************************/
-      /* build citation blocks */
-      /**************************************************/
-
-      const citationsHtml = citationBlocks.map((block, index) => {
-        const cleaned = block.replace(/^\d+[\).\s]+/, "").trim();
-
-        return `
-          <div class="source-item">
-            <div class="source-number">${index + 1}</div>
-            <div class="source-body">
-              <div class="source-text">${cleaned}</div>
-            </div>
-          </div>
-        `;
-      }).join("");
-
-      /**************************************************/
-      /* return final html */
-      /**************************************************/
+    const citationsHtml = citationBlocks.map((block, index) => {
+      const cleaned = block.replace(/^\d+[\).\s]+/, "").trim();
 
       return `
-        ${introHtml}
-        <div class="sources-card">
-          <div class="sources-heading">SOURCES</div>
-          ${citationsHtml}
+        <div class="source-item">
+          <div class="source-number">${index + 1}</div>
+          <div class="source-body">
+            <div class="source-text">${cleaned}</div>
+          </div>
         </div>
       `;
-    }
+    }).join("");
+
     /**************************************************/
-    /* message rendering */
+    /* return final html */
     /**************************************************/
 
-    // add a message bubble to the chat
-    function addMessage(text, sender, sources = null, showActions = true) {
-      const wrapper = document.createElement("div");
-      wrapper.className = `message-wrapper ${sender}`;
+    return `
+      ${introHtml}
+      <div class="sources-card">
+        <div class="sources-heading">SOURCES</div>
+        ${citationsHtml}
+      </div>
+    `;
+  }
 
-      // create the main message bubble
-      const bubble = document.createElement("div");
-      bubble.className = `message ${sender}`;
+  /**************************************************/
+  /* textarea auto grow */
+  /**************************************************/
 
-      // create the rendered markdown content
-      const contentDiv = document.createElement("div");
-      contentDiv.className = "message-content";
-      contentDiv.innerHTML = marked.parse(text);
-      bubble.appendChild(contentDiv);
+  // auto-expand textarea as user types
+  userInput.addEventListener("input", () => {
+    userInput.style.height = "auto";
+    userInput.style.height = userInput.scrollHeight + "px";
+  });
 
-      // only sage responses get action buttons
-      let sourcesDiv = null;
+  /**************************************************/
+  /* message rendering */
+  /**************************************************/
 
-      if (sender === "sage" && showActions) {
-        const actions = document.createElement("div");
-        actions.className = "message-actions";
+  // add a message bubble to the chat
+  function addMessage(text, sender, sources = null, showActions = true, followups = []) {
+    const wrapper = document.createElement("div");
+    wrapper.className = `message-wrapper ${sender}`;
 
-        const copyBtn = document.createElement("button");
-        copyBtn.className = "action-button";
-        copyBtn.textContent = "Copy";
+    // create the main message bubble
+    const bubble = document.createElement("div");
+    bubble.className = `message ${sender}`;
 
-        const editBtn = document.createElement("button");
-        editBtn.className = "action-button";
-        editBtn.textContent = "Edit";
+    // create the rendered markdown content
+    const contentDiv = document.createElement("div");
+    contentDiv.className = "message-content";
+    contentDiv.innerHTML = marked.parse(text);
+    bubble.appendChild(contentDiv);
 
-        const downloadBtn = document.createElement("button");
-        downloadBtn.className = "action-button";
-        downloadBtn.textContent = "Download";
+    // only sage responses get action buttons
+    let sourcesDiv = null;
 
-        let isEditing = false;
-        let textarea = null;
-        let originalText = text;
+    if (sender === "sage" && showActions) {
+      const actions = document.createElement("div");
+      actions.className = "message-actions";
 
-        // copy the visible text of the message
-        copyBtn.onclick = async () => {
-          await navigator.clipboard.writeText(contentDiv.innerText);
-          copyBtn.textContent = "Copied";
-          setTimeout(() => {
-            copyBtn.textContent = "Copy";
-          }, 1500);
-        };
+      const copyBtn = document.createElement("button");
+      copyBtn.className = "action-button";
+      copyBtn.textContent = "Copy";
 
-        // switch into edit mode or save edited content
-        editBtn.onclick = () => {
-          if (!isEditing) {
-            isEditing = true;
+      const editBtn = document.createElement("button");
+      editBtn.className = "action-button";
+      editBtn.textContent = "Edit";
 
-            // create the textarea with the original markdown text
-            textarea = document.createElement("textarea");
-            textarea.className = "message-editor";
-            textarea.value = originalText;
+      const downloadBtn = document.createElement("button");
+      downloadBtn.className = "action-button";
+      downloadBtn.textContent = "Download";
 
-            // replace rendered content with the textarea
-            bubble.replaceChild(textarea, contentDiv);
-            bubble.classList.add("editing");
+      let isEditing = false;
+      let textarea = null;
+      let originalText = text;
 
-            editBtn.textContent = "Save";
+      // copy the visible text of the message
+      copyBtn.onclick = async () => {
+        await navigator.clipboard.writeText(contentDiv.innerText);
+        copyBtn.textContent = "Copied";
+        setTimeout(() => {
+          copyBtn.textContent = "Copy";
+        }, 1500);
+      };
 
-            // wait until textarea is in the dom, then size it to match message height
-            requestAnimationFrame(() => {
-              autoResizeTextarea(textarea);
-              textarea.focus();
-              textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-            });
+      // switch into edit mode or save edited content
+      editBtn.onclick = () => {
+        if (!isEditing) {
+          isEditing = true;
 
-            // resize while user types
-            textarea.addEventListener("input", () => autoResizeTextarea(textarea));
+          // create the textarea with the original markdown text
+          textarea = document.createElement("textarea");
+          textarea.className = "message-editor";
+          textarea.value = originalText;
 
-            // add cancel button if it does not already exist
-            let cancelBtn = actions.querySelector('[data-role="cancel"]');
+          // replace rendered content with the textarea
+          bubble.replaceChild(textarea, contentDiv);
+          bubble.classList.add("editing");
 
-            if (!cancelBtn) {
-              cancelBtn = document.createElement("button");
-              cancelBtn.className = "action-button cancel-button";
-              cancelBtn.textContent = "Cancel";
-              cancelBtn.dataset.role = "cancel";
+          editBtn.textContent = "Save";
 
-              // put original rendered message back if user cancels
-              cancelBtn.onclick = () => {
-                isEditing = false;
-                contentDiv.innerHTML = marked.parse(originalText);
-                bubble.replaceChild(contentDiv, textarea);
-                bubble.classList.remove("editing");
-                editBtn.textContent = "Edit";
-                cancelBtn.remove();
-              };
+          // wait until textarea is in the dom, then size it to match message height
+          requestAnimationFrame(() => {
+            autoResizeTextarea(textarea);
+            textarea.focus();
+            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+          });
 
-              actions.appendChild(cancelBtn);
-            }
+          // resize while user types
+          textarea.addEventListener("input", () => autoResizeTextarea(textarea));
 
-          } else {
-            isEditing = false;
+          // add cancel button if it does not already exist
+          let cancelBtn = actions.querySelector('[data-role="cancel"]');
 
-            // save updated text and render it as markdown again
-            originalText = textarea.value;
-            contentDiv.innerHTML = marked.parse(originalText);
+          if (!cancelBtn) {
+            cancelBtn = document.createElement("button");
+            cancelBtn.className = "action-button cancel-button";
+            cancelBtn.textContent = "Cancel";
+            cancelBtn.dataset.role = "cancel";
 
-            bubble.replaceChild(contentDiv, textarea);
-            bubble.classList.remove("editing");
-            editBtn.textContent = "Edit";
+            // put original rendered message back if user cancels
+            cancelBtn.onclick = () => {
+              isEditing = false;
+              contentDiv.innerHTML = marked.parse(originalText);
+              bubble.replaceChild(contentDiv, textarea);
+              bubble.classList.remove("editing");
+              editBtn.textContent = "Edit";
+              cancelBtn.remove();
+            };
 
-            // remove cancel button after saving
-            const cancelBtn = actions.querySelector('[data-role="cancel"]');
-            if (cancelBtn) cancelBtn.remove();
-          }
-        };
-
-        // download the message content, and sources if they exist
-        downloadBtn.onclick = () => {
-          const temp = document.createElement("div");
-          temp.innerHTML = contentDiv.innerHTML;
-
-          if (sourcesDiv) {
-            temp.appendChild(document.createElement("hr"));
-            temp.appendChild(sourcesDiv.cloneNode(true));
+            actions.appendChild(cancelBtn);
           }
 
-          downloadWordDoc("sage-response.doc", temp.innerHTML);
-        };
+        } else {
+          isEditing = false;
 
-        actions.appendChild(copyBtn);
-        actions.appendChild(editBtn);
-        actions.appendChild(downloadBtn);
-        bubble.appendChild(actions);
-      }
+          // save updated text and render it as markdown again
+          originalText = textarea.value;
+          contentDiv.innerHTML = marked.parse(originalText);
 
-      wrapper.appendChild(bubble);
+          bubble.replaceChild(contentDiv, textarea);
+          bubble.classList.remove("editing");
+          editBtn.textContent = "Edit";
 
-      // add collapsible sources outside the message bubble
-      if (sources) {
-        const citationsArea = document.createElement("div");
-        citationsArea.className = "citations-area";
+          // remove cancel button after saving
+          const cancelBtn = actions.querySelector('[data-role="cancel"]');
+          if (cancelBtn) cancelBtn.remove();
+        }
+      };
 
-        const sourcesToggle = document.createElement("button");
-        sourcesToggle.className = "sources-toggle";
-        sourcesToggle.type = "button";
-        sourcesToggle.innerHTML = 'Where did this information come from? <span class="sources-arrow">▾</span>';
+      // download the message content, and sources if they exist
+      downloadBtn.onclick = () => {
+        const temp = document.createElement("div");
+        temp.innerHTML = contentDiv.innerHTML;
 
-        sourcesDiv = document.createElement("div");
-        sourcesDiv.className = "sources collapsible-sources";
-        sourcesDiv.innerHTML = formatSources(sources);
+        if (sourcesDiv) {
+          temp.appendChild(document.createElement("hr"));
+          temp.appendChild(sourcesDiv.cloneNode(true));
+        }
 
-        sourcesToggle.addEventListener("click", () => {
-          const isOpen = sourcesDiv.classList.contains("open");
-          const arrow = sourcesToggle.querySelector(".sources-arrow");
+        downloadWordDoc("sage-response.doc", temp.innerHTML);
+      };
 
-          if (isOpen) {
-            sourcesDiv.classList.remove("open");
-            arrow.textContent = "▾";
-          } else {
-            sourcesDiv.classList.add("open");
-            arrow.textContent = "▴";
-
-            // scroll to the bottom of the expanded citations block
-            requestAnimationFrame(() => {
-              sourcesDiv.scrollIntoView({ behavior: "smooth", block: "end" });
-            });
-          }
-        });
-
-        citationsArea.appendChild(sourcesToggle);
-        citationsArea.appendChild(sourcesDiv);
-        wrapper.appendChild(citationsArea);
-      }
-
-      // add message to chat
-      chat.appendChild(wrapper);
-
-      // for bot replies, bring the top of the reply into view automatically
-      if (sender === "sage") {
-        requestAnimationFrame(() => {
-          wrapper.scrollIntoView({ behavior: "smooth", block: "start" });
-        });
-      } else {
-        chat.scrollTop = chat.scrollHeight;
-      }
+      actions.appendChild(copyBtn);
+      actions.appendChild(editBtn);
+      actions.appendChild(downloadBtn);
+      bubble.appendChild(actions);
     }
+
+    wrapper.appendChild(bubble);
+
+    // add collapsible sources outside the message bubble
+    if (sources) {
+      const citationsArea = document.createElement("div");
+      citationsArea.className = "citations-area";
+
+      const sourcesToggle = document.createElement("button");
+      sourcesToggle.className = "sources-toggle";
+      sourcesToggle.type = "button";
+      sourcesToggle.innerHTML = 'Where did this information come from? <span class="sources-arrow">▾</span>';
+
+      sourcesDiv = document.createElement("div");
+      sourcesDiv.className = "sources collapsible-sources";
+      sourcesDiv.innerHTML = formatSources(sources);
+
+      sourcesToggle.addEventListener("click", () => {
+        const isOpen = sourcesDiv.classList.contains("open");
+        const arrow = sourcesToggle.querySelector(".sources-arrow");
+
+        if (isOpen) {
+          sourcesDiv.classList.remove("open");
+          arrow.textContent = "▾";
+        } else {
+          sourcesDiv.classList.add("open");
+          arrow.textContent = "▴";
+
+          // scroll to the bottom of the expanded citations block
+          requestAnimationFrame(() => {
+            sourcesDiv.scrollIntoView({ behavior: "smooth", block: "end" });
+          });
+        }
+      });
+
+      citationsArea.appendChild(sourcesToggle);
+      citationsArea.appendChild(sourcesDiv);
+      wrapper.appendChild(citationsArea);
+    }
+
+    // add follow-up suggestions under sage replies
+    if (sender === "sage" && followups.length > 0) {
+      addFollowupQuestions(wrapper, followups);
+    }
+
+    // add message to chat
+    chat.appendChild(wrapper);
+
+    // for bot replies, bring the top of the reply into view automatically
+    if (sender === "sage") {
+      requestAnimationFrame(() => {
+        wrapper.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    } else {
+      chat.scrollTop = chat.scrollHeight;
+    }
+  }
+
+  /**************************************************/
+  /* starter questions */
+  /**************************************************/
 
   // add clickable starter questions under the intro message
   function addStarterQuestions() {
@@ -583,28 +603,67 @@
     chat.appendChild(wrapper);
   }
 
-    /**************************************************/
-    /* api calls */
-    /**************************************************/
+  /**************************************************/
+  /* follow-up questions */
+  /**************************************************/
 
-    // load the intro message from the backend
-    async function loadIntro() {
-      try {
-        const response = await fetch("/intro");
-        const data = await response.json();
+  // add clickable follow-up questions under each sage response
+function addFollowupQuestions(parentWrapper, questions) {
+  if (!questions || questions.length === 0) return;
 
-        console.log("intro response:", data);
+  const wrapper = document.createElement("div");
+  wrapper.className = "starter-questions followup-questions";
 
-        introMessage.remove();
-        addMessage(data.intro, "sage", null, false);
-        addStarterQuestions();
-      } catch (error) {
-        console.error("intro failed:", error);
-        introMessage.textContent = "Could not load Sage.";
-      }
+  const label = document.createElement("div");
+  label.className = "starter-label";
+  label.textContent = "You might be thinking...";
+  wrapper.appendChild(label);
+
+  questions.slice(0, 2).forEach((question) => {
+    const button = document.createElement("button");
+    button.className = "starter-question-button";
+    button.type = "button";
+    button.textContent = question;
+
+    button.addEventListener("click", () => {
+      userInput.value = question;
+      userInput.style.height = "auto";
+      userInput.style.height = userInput.scrollHeight + "px";
+
+      // remove the whole follow-up block once one is clicked
+      wrapper.remove();
+
+      sendMessage();
+    });
+
+    wrapper.appendChild(button);
+  });
+
+  parentWrapper.appendChild(wrapper);
+}
+
+  /**************************************************/
+  /* api calls */
+  /**************************************************/
+
+  // load the intro message from the backend
+  async function loadIntro() {
+    try {
+      const response = await fetch("/intro");
+      const data = await response.json();
+
+      console.log("intro response:", data);
+
+      introMessage.remove();
+      addMessage(data.intro, "sage", null, false);
+      addStarterQuestions();
+    } catch (error) {
+      console.error("intro failed:", error);
+      introMessage.textContent = "Could not load Sage.";
     }
+  }
 
-    // send the user's message to the backend and show sage's response
+  // send the user's message to the backend and show sage's response
   async function sendMessage() {
     const message = userInput.value.trim();
     if (!message) return;
@@ -614,6 +673,7 @@
 
     addMessage(message, "user");
     userInput.value = "";
+    userInput.style.height = "auto";
 
     // show temporary loading state
     const loadingWrapper = document.createElement("div");
@@ -621,7 +681,12 @@
 
     const loading = document.createElement("div");
     loading.className = "message sage loading";
-    loading.textContent = "Sage is thinking...";
+    loading.innerHTML = `
+      <span class="loading-text">Sage is thinking</span>
+      <span class="loading-dots">
+        <span>.</span><span>.</span><span>.</span>
+      </span>
+    `;
 
     loadingWrapper.appendChild(loading);
     chat.appendChild(loadingWrapper);
@@ -645,7 +710,7 @@
         return;
       }
 
-      addMessage(data.answer, "sage", data.sources, true);
+      addMessage(data.answer, "sage", data.sources, true, data.followups || []);
 
     } catch {
       loadingWrapper.remove();
@@ -675,21 +740,25 @@
   welcomeClose.addEventListener("click", closeWelcomeModal);
   welcomeStart.addEventListener("click", closeWelcomeModal);
 
-    /**************************************************/
-    /* event listeners */
-    /**************************************************/
+  /**************************************************/
+  /* event listeners */
+  /**************************************************/
 
-    // click send button to submit message
-    sendButton.addEventListener("click", sendMessage);
+  // click send button to submit message
+  sendButton.addEventListener("click", sendMessage);
 
-    // press enter to submit message
-    userInput.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") sendMessage();
-    });
+  // press enter to submit message
+  userInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
 
-    // load intro message when page opens
-    loadIntro();
-    maybeShowWelcomeModal();
-  </script>
+  // load intro message when page opens
+  loadIntro();
+  maybeShowWelcomeModal();
+</script>
+
 </body>
 </html>

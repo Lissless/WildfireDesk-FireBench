@@ -314,6 +314,62 @@ body {
   background: transparent;
 }
 
+/* input row container */
+.input-area {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 12px;
+  border-top: 1px solid #eee;
+  background: #fff;
+}
+
+/* textarea styling */
+#user-input {
+  flex: 1;
+  min-height: 40px;
+  max-height: 140px;
+
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+
+  border: 1px solid #ddd;
+  border-radius: 10px;
+
+  resize: none;
+  overflow-y: hidden;
+
+  outline: none;
+  line-height: 1.4;
+  background: #fafafa;
+}
+
+/* focus state */
+#user-input:focus {
+  border-color: #c7b8ff;
+  background: #fff;
+}
+
+/* send button */
+#send-button {
+  height: 40px;
+  padding: 0 16px;
+
+  border: none;
+  border-radius: 8px;
+
+  background-color: #7c6cff;
+  color: white;
+  font-weight: 500;
+
+  cursor: pointer;
+}
+
+#send-button:hover {
+  background-color: #6a5ae0;
+}
+
 /**************************************************/
 /* message wrappers */
 /**************************************************/
@@ -941,4 +997,85 @@ body {
 
 .starter-question-button:active {
   transform: translateY(0);
+}
+
+/* loading bubble text layout */
+.message.loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* keep the text steady */
+.loading-text {
+  white-space: nowrap;
+}
+
+/* dots container */
+.loading-dots {
+  display: inline-flex;
+}
+
+.loading-dots span {
+  font-size: 20px;
+  line-height: 1;
+  margin-left: 2px;
+
+  opacity: 0.2;
+  animation: loadingBlink 1.4s infinite;
+  font-weight: 600;
+}
+/* stagger the dots */
+.loading-dots span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loading-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* blinking effect */
+@keyframes loadingBlink {
+  0%, 80%, 100% {
+    opacity: 0.2;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+/**************************************************/
+/* follow-up questions under sage replies */
+/**************************************************/
+
+.followup-questions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+
+  width: 100% !important;
+  align-self: stretch;
+
+  margin-top: 10px;
+}
+
+.followup-questions .starter-label {
+  align-self: flex-end;
+  text-align: right;
+  margin-bottom: 4px;
+}
+
+.followup-questions .starter-question-button {
+  align-self: flex-end;
+
+  max-width: 60%;
+  text-align: left;
+  white-space: normal;
+  line-height: 1.4;
 }

@@ -304,6 +304,48 @@ def get_source(rag_context):
     response, _ = prompt_sage(citation_prompt)
     return response["result"]
     
+def get_followup_questions(user_message, answer, mode="grounded"):
+    include_rag = (mode == "grounded")
+
+    followup_prompt = f"""
+    You are simulating what the USER is likely thinking after reading an answer.
+
+    User’s original question:
+    {user_message}
+
+    Sage’s response:
+    {answer}
+
+    Write exactly 2 follow-up questions that the USER would naturally ask next.
+
+    Guidelines:
+    - These should reflect the user's perspective, not the assistant’s
+    - Make them specific to the situation described in the answer
+    - Focus on what the user would realistically want to clarify, decide, or do next
+    - Use natural, conversational phrasing
+    - Avoid formal or advisory language
+    - Do not suggest what the user "should" do
+    - Do not sound like an expert or assistant
+    - Each question should feel like a direct continuation of the user's thinking
+
+    Output rules:
+    - Exactly 2 questions
+    - Each on its own line
+    - No numbering, no bullets, no extra text
+    """
+    
+    response, _ = prompt_sage(followup_prompt, include_rag=include_rag)
+    raw_text = response["result"].strip()
+
+    questions = [
+        line.strip().lstrip("-•1234567890. ").strip()
+        for line in raw_text.splitlines()
+        if line.strip()
+    ]
+
+    return questions[:2]
+
+
 def chat_with_sage(user_message, mode="grounded"):
     use_rag = (mode == "grounded")
 
@@ -321,9 +363,12 @@ def chat_with_sage(user_message, mode="grounded"):
         )
         answer = f"{answer}\n\n---\n{warning}"
 
+    followups = get_followup_questions(user_message, answer, mode=mode)
+
     return {
         "answer": answer,
         "sources": sources,
+        "followups": followups,
         "used_rag": use_rag and len(rag_context) > 0,
         "rag_context": rag_context,
         "mode": mode
