@@ -43,12 +43,10 @@
           Sage helps you understand your options and take practical steps after a wildfire. It supports both individual decisions and community efforts so you can move forward with clarity.
         </p>
 
-        <!-- toggle button -->
         <button class="expand-toggle" type="button" onclick="togglePrivacy(this)">
           See more <span class="arrow">▾</span>
         </button>
 
-        <!-- hidden content -->
         <div class="expand-content">
           <ul class="sidebar-list">
             <li>Understand your options for FEMA, insurance, and recovery</li>
@@ -66,12 +64,10 @@
           Your privacy matters. Sage is designed to support you without storing personal information.
         </p>
 
-        <!-- toggle button for expanded privacy details -->
         <button class="expand-toggle" type="button" onclick="togglePrivacy(this)">
           See more <span class="arrow">▾</span>
         </button>
 
-        <!-- hidden content shown when expanded -->
         <div class="expand-content">
           <ul class="sidebar-list">
             <li>We do not store your personal data or chat history.</li>
@@ -81,7 +77,6 @@
         </div>
       </div>
 
-      <!-- emergency callout fixed to bottom -->
       <div class="sidebar-alert">
         If you are in immediate danger, call 911.
       </div>
@@ -93,7 +88,6 @@
     <!-- main chat area -->
     <main class="app">
 
-      <!-- top header for sage -->
       <div class="header">
         <div class="chat-title-row">
           <div>
@@ -198,7 +192,6 @@
   /* main dom references */
   /**************************************************/
 
-  // grab the main page elements
   const chat = document.getElementById("chat");
   const userInput = document.getElementById("user-input");
   const sendButton = document.getElementById("send-button");
@@ -206,7 +199,6 @@
   const appShell = document.querySelector(".app-shell");
   const sidebarToggle = document.getElementById("sidebar-toggle");
 
-  // starter questions shown under the intro message
   const starterQuestions = [
     "How do I organize my neighbors after a wildfire?",
     "How can I start a community group for recovery efforts?",
@@ -218,7 +210,6 @@
   /* sidebar collapse */
   /**************************************************/
 
-  // toggle full sidebar open and close
   sidebarToggle.addEventListener("click", () => {
     const collapsed = appShell.classList.toggle("sidebar-collapsed");
     sidebarToggle.textContent = collapsed ? "›" : "‹";
@@ -228,7 +219,6 @@
   /* privacy expand */
   /**************************************************/
 
-  // expand or collapse the privacy section
   function togglePrivacy(button) {
     const content = button.parentElement.querySelector(".expand-content");
     const isOpen = content.classList.contains("open");
@@ -246,7 +236,6 @@
   /* download and editing helpers */
   /**************************************************/
 
-  // create and download a word document from html content
   function downloadWordDoc(filename, htmlContent) {
     const fullHtml = `
       <html xmlns:o="urn:schemas-microsoft-com:office:office"
@@ -275,11 +264,22 @@
     URL.revokeObjectURL(url);
   }
 
-  // size the textarea to match the content, but cap it at 70% of screen height
   function autoResizeTextarea(textarea) {
     textarea.style.height = "auto";
     const maxHeight = window.innerHeight * 0.7;
     textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + "px";
+  }
+
+  /**************************************************/
+  /* linkify urls */
+  /**************************************************/
+
+  function linkifyText(text) {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+
+    return text.replace(urlRegex, function(url) {
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+    });
   }
 
   /**************************************************/
@@ -297,10 +297,6 @@
       return sources;
     }
 
-    /**************************************************/
-    /* split intro text from citations */
-    /**************************************************/
-
     const firstCitationMatch = text.match(/(?:^|\n)\s*1[\).\s]/);
 
     let introText = "";
@@ -311,10 +307,6 @@
       citationsText = text.slice(firstCitationMatch.index).trim();
     }
 
-    /**************************************************/
-    /* split only on numbered citations */
-    /**************************************************/
-
     const citationBlocks = citationsText
       .split(/\n(?=\s*\d+[\).\s])/)
       .map(block => block.trim())
@@ -324,20 +316,14 @@
       return marked.parse(sources);
     }
 
-    /**************************************************/
-    /* build intro paragraph */
-    /**************************************************/
-
     const introHtml = introText
       ? `<p>${introText.replace(/\n/g, "<br>")}</p>`
       : "";
 
-    /**************************************************/
-    /* build citation blocks */
-    /**************************************************/
-
     const citationsHtml = citationBlocks.map((block, index) => {
-      const cleaned = block.replace(/^\d+[\).\s]+/, "").trim();
+      const cleaned = linkifyText(
+        block.replace(/^\d+[\).\s]+/, "").trim()
+      );
 
       return `
         <div class="source-item">
@@ -348,10 +334,6 @@
         </div>
       `;
     }).join("");
-
-    /**************************************************/
-    /* return final html */
-    /**************************************************/
 
     return `
       ${introHtml}
@@ -366,7 +348,6 @@
   /* textarea auto grow */
   /**************************************************/
 
-  // auto-expand textarea as user types
   userInput.addEventListener("input", () => {
     userInput.style.height = "auto";
     userInput.style.height = userInput.scrollHeight + "px";
@@ -376,22 +357,18 @@
   /* message rendering */
   /**************************************************/
 
-  // add a message bubble to the chat
   function addMessage(text, sender, sources = null, showActions = true, followups = []) {
     const wrapper = document.createElement("div");
     wrapper.className = `message-wrapper ${sender}`;
 
-    // create the main message bubble
     const bubble = document.createElement("div");
     bubble.className = `message ${sender}`;
 
-    // create the rendered markdown content
     const contentDiv = document.createElement("div");
     contentDiv.className = "message-content";
     contentDiv.innerHTML = marked.parse(text);
     bubble.appendChild(contentDiv);
 
-    // only sage responses get action buttons
     let sourcesDiv = null;
 
     if (sender === "sage" && showActions) {
@@ -414,7 +391,6 @@
       let textarea = null;
       let originalText = text;
 
-      // copy the visible text of the message
       copyBtn.onclick = async () => {
         await navigator.clipboard.writeText(contentDiv.innerText);
         copyBtn.textContent = "Copied";
@@ -423,33 +399,27 @@
         }, 1500);
       };
 
-      // switch into edit mode or save edited content
       editBtn.onclick = () => {
         if (!isEditing) {
           isEditing = true;
 
-          // create the textarea with the original markdown text
           textarea = document.createElement("textarea");
           textarea.className = "message-editor";
           textarea.value = originalText;
 
-          // replace rendered content with the textarea
           bubble.replaceChild(textarea, contentDiv);
           bubble.classList.add("editing");
 
           editBtn.textContent = "Save";
 
-          // wait until textarea is in the dom, then size it to match message height
           requestAnimationFrame(() => {
             autoResizeTextarea(textarea);
             textarea.focus();
             textarea.setSelectionRange(textarea.value.length, textarea.value.length);
           });
 
-          // resize while user types
           textarea.addEventListener("input", () => autoResizeTextarea(textarea));
 
-          // add cancel button if it does not already exist
           let cancelBtn = actions.querySelector('[data-role="cancel"]');
 
           if (!cancelBtn) {
@@ -458,7 +428,6 @@
             cancelBtn.textContent = "Cancel";
             cancelBtn.dataset.role = "cancel";
 
-            // put original rendered message back if user cancels
             cancelBtn.onclick = () => {
               isEditing = false;
               contentDiv.innerHTML = marked.parse(originalText);
@@ -474,7 +443,6 @@
         } else {
           isEditing = false;
 
-          // save updated text and render it as markdown again
           originalText = textarea.value;
           contentDiv.innerHTML = marked.parse(originalText);
 
@@ -482,13 +450,11 @@
           bubble.classList.remove("editing");
           editBtn.textContent = "Edit";
 
-          // remove cancel button after saving
           const cancelBtn = actions.querySelector('[data-role="cancel"]');
           if (cancelBtn) cancelBtn.remove();
         }
       };
 
-      // download the message content, and sources if they exist
       downloadBtn.onclick = () => {
         const temp = document.createElement("div");
         temp.innerHTML = contentDiv.innerHTML;
@@ -509,7 +475,6 @@
 
     wrapper.appendChild(bubble);
 
-    // add collapsible sources outside the message bubble
     if (sources) {
       const citationsArea = document.createElement("div");
       citationsArea.className = "citations-area";
@@ -534,7 +499,6 @@
           sourcesDiv.classList.add("open");
           arrow.textContent = "▴";
 
-          // scroll to the bottom of the expanded citations block
           requestAnimationFrame(() => {
             sourcesDiv.scrollIntoView({ behavior: "smooth", block: "end" });
           });
@@ -551,24 +515,19 @@
       addFollowupQuestions(wrapper, followups);
     }
 
-    // add message to chat
     chat.appendChild(wrapper);
 
-    // for bot replies, bring the top of the reply into view automatically
-    if (sender === "sage") {
-      requestAnimationFrame(() => {
-        wrapper.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
-    } else {
+    if (sender !== "sage") {
       chat.scrollTop = chat.scrollHeight;
     }
+
+    return wrapper;
   }
 
   /**************************************************/
   /* starter questions */
   /**************************************************/
 
-  // add clickable starter questions under the intro message
   function addStarterQuestions() {
     const wrapper = document.createElement("div");
     wrapper.className = "starter-questions";
@@ -576,7 +535,7 @@
 
     const label = document.createElement("div");
     label.className = "starter-label";
-    label.textContent = "You can also ask:";
+    label.textContent = "You can start by asking:";
     wrapper.appendChild(label);
 
     starterQuestions.forEach((question) => {
@@ -585,7 +544,6 @@
       button.type = "button";
       button.textContent = question;
 
-      // click to send the question right away, then remove the starter chips
       button.addEventListener("click", () => {
         userInput.value = question;
 
@@ -607,46 +565,43 @@
   /* follow-up questions */
   /**************************************************/
 
-  // add clickable follow-up questions under each sage response
-function addFollowupQuestions(parentWrapper, questions) {
-  if (!questions || questions.length === 0) return;
+  function addFollowupQuestions(parentWrapper, questions) {
+    if (!questions || questions.length === 0) return;
 
-  const wrapper = document.createElement("div");
-  wrapper.className = "starter-questions followup-questions";
+    const wrapper = document.createElement("div");
+    wrapper.className = "starter-questions followup-questions";
 
-  const label = document.createElement("div");
-  label.className = "starter-label";
-  label.textContent = "You might be thinking...";
-  wrapper.appendChild(label);
+    const label = document.createElement("div");
+    label.className = "starter-label";
+    label.textContent = "You might be thinking...";
+    wrapper.appendChild(label);
 
-  questions.slice(0, 2).forEach((question) => {
-    const button = document.createElement("button");
-    button.className = "starter-question-button";
-    button.type = "button";
-    button.textContent = question;
+    questions.slice(0, 2).forEach((question) => {
+      const button = document.createElement("button");
+      button.className = "starter-question-button";
+      button.type = "button";
+      button.textContent = question;
 
-    button.addEventListener("click", () => {
-      userInput.value = question;
-      userInput.style.height = "auto";
-      userInput.style.height = userInput.scrollHeight + "px";
+      button.addEventListener("click", () => {
+        userInput.value = question;
+        userInput.style.height = "auto";
+        userInput.style.height = userInput.scrollHeight + "px";
 
-      // remove the whole follow-up block once one is clicked
-      wrapper.remove();
+        wrapper.remove();
 
-      sendMessage();
+        sendMessage();
+      });
+
+      wrapper.appendChild(button);
     });
 
-    wrapper.appendChild(button);
-  });
-
-  parentWrapper.appendChild(wrapper);
-}
+    parentWrapper.appendChild(wrapper);
+  }
 
   /**************************************************/
   /* api calls */
   /**************************************************/
 
-  // load the intro message from the backend
   async function loadIntro() {
     try {
       const response = await fetch("/intro");
@@ -663,19 +618,16 @@ function addFollowupQuestions(parentWrapper, questions) {
     }
   }
 
-  // send the user's message to the backend and show sage's response
   async function sendMessage() {
     const message = userInput.value.trim();
     if (!message) return;
 
-    // get selected mode from toggle
     const selectedMode = document.querySelector('input[name="sage-mode"]:checked').value;
 
     addMessage(message, "user");
     userInput.value = "";
     userInput.style.height = "auto";
 
-    // show temporary loading state
     const loadingWrapper = document.createElement("div");
     loadingWrapper.className = "message-wrapper sage";
 
@@ -703,6 +655,8 @@ function addFollowupQuestions(parentWrapper, questions) {
       });
 
       const data = await response.json();
+      console.log("chat response:", data);
+
       loadingWrapper.remove();
 
       if (data.error) {
@@ -710,7 +664,17 @@ function addFollowupQuestions(parentWrapper, questions) {
         return;
       }
 
-      addMessage(data.answer, "sage", data.sources, true, data.followups || []);
+      const messageWrapper = addMessage(
+        data.answer,
+        "sage",
+        data.sources,
+        true,
+        data.followups || []
+      );
+
+      requestAnimationFrame(() => {
+        messageWrapper.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
 
     } catch {
       loadingWrapper.remove();
@@ -726,12 +690,10 @@ function addFollowupQuestions(parentWrapper, questions) {
   const welcomeClose = document.getElementById("welcome-close");
   const welcomeStart = document.getElementById("welcome-start");
 
-  // show modal only the first time this browser loads the page
   function maybeShowWelcomeModal() {
     welcomeModal.classList.remove("hidden");
   }
 
-  // close modal and remember choice
   function closeWelcomeModal() {
     welcomeModal.classList.add("hidden");
     localStorage.setItem("sageWelcomeSeen", "true");
@@ -744,10 +706,8 @@ function addFollowupQuestions(parentWrapper, questions) {
   /* event listeners */
   /**************************************************/
 
-  // click send button to submit message
   sendButton.addEventListener("click", sendMessage);
 
-  // press enter to submit message
   userInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -755,7 +715,6 @@ function addFollowupQuestions(parentWrapper, questions) {
     }
   });
 
-  // load intro message when page opens
   loadIntro();
   maybeShowWelcomeModal();
 </script>
