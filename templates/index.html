@@ -111,11 +111,20 @@
 
     <!-- right sidebar for settings -->
     <aside class="settings-sidebar">
+
+      <!-- help link -->
+      <div class="how-it-works-card">
+        <button id="how-it-works-btn" class="how-it-works-row" type="button">
+          <span class="how-text">How Sage works</span>
+          <span class="help-icon">?</span>
+        </button>
+      </div>
+
       <div class="settings-card">
         <div class="settings-header">
           <h2>Settings</h2>
         </div>
-
+        
         <div class="settings-section">
           <div class="settings-label-row">
             <span class="settings-label">Response mode</span>
@@ -689,6 +698,11 @@
   const welcomeModal = document.getElementById("welcome-modal");
   const welcomeClose = document.getElementById("welcome-close");
   const welcomeStart = document.getElementById("welcome-start");
+
+  const howItWorksBtn = document.getElementById("how-it-works-btn");
+  howItWorksBtn.addEventListener("click", () => {
+    welcomeModal.classList.remove("hidden");
+  });
 
   function maybeShowWelcomeModal() {
     welcomeModal.classList.remove("hidden");

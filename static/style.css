@@ -950,3 +950,61 @@ body {
     width: 88%;
   }
 }
+
+/* outer card (matches settings card style) */
+.how-it-works-card {
+  background: white;
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+
+  border: 1px solid #e3e8ef;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+/* row inside card */
+.how-it-works-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  background: none;
+  border: none;
+  padding: 6px 4px;
+
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+
+  color: #000000;
+  cursor: pointer;
+}
+
+/* hover = subtle lift like your UI */
+.how-it-works-row:hover {
+  opacity: 0.85;
+}
+
+/* text */
+.how-text {
+  font-size: 15px;
+}
+
+/* icon on RIGHT side */
+.help-icon {
+  width: 22px;
+  height: 22px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 999px;
+
+  background: #2f7f6f;
+  color: white;
+
+  font-size: 13px;
+  font-weight: 700;
+}
