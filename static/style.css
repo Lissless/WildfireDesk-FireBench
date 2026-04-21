@@ -767,6 +767,52 @@ body {
   color: #374151;
 }
 
+.settings-divider {
+  height: 1px;
+  background: #e5eaef;
+  margin: 14px 0;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: #5f7085;
+  cursor: pointer;
+}
+
+.toggle-text {
+  line-height: 1.4;
+}
+
+#local-news-toggle {
+  accent-color: #2f7f6f;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.settings-select {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid #d6dde5;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1f2937;
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+}
+
+.settings-select:focus {
+  border-color: #9fd4c3;
+  box-shadow: 0 0 0 3px rgba(63, 143, 126, 0.08);
+}
+
 .mode-option {
   display: flex;
   align-items: center;

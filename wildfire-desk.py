@@ -439,21 +439,34 @@ def get_followup_questions(user_message, answer):
         "Can you help me turn that into a message or agenda?"
     ]
 
-def chat_with_sage(user_message, mode="grounded"):
+def chat_with_sage(user_message, mode="grounded", use_local_news=False, selected_state=""):
     use_rag = (mode == "grounded")
+
+    # NEW: local news wiring
+    web_results = []
+    if use_local_news and selected_state:
+        try:
+            web_results = search_web(user_message, selected_state, None)
+        except Exception as e:
+            print("Web search error:", e)
+    # END NEW
 
     response, rag_context = prompt_sage(user_message, include_rag=use_rag)
     answer = response["result"]
 
-    show_citations = should_show_citations(answer)
-    generate_followups = should_generate_followups(answer)
+    sources = None
+    should_generate = should_generate_followups(answer)
 
-    if use_rag and len(rag_context) > 0 and show_citations:
-        sources = get_source(rag_context)
-    else:
+    if should_generate:
+        # sage is asking follow-up questions → no sources, no disclaimer
         sources = None
 
-    if not use_rag and show_citations:
+    elif use_rag and len(rag_context) > 0:
+        # grounded answer with sources
+        sources = get_source(rag_context)
+
+    else:
+        # only add disclaimer for actual answers (not questions)
         warning = (
             "Note: This answer is based on general knowledge and may not reflect "
             "specific local policies or up-to-date recovery information. "
@@ -461,18 +474,15 @@ def chat_with_sage(user_message, mode="grounded"):
         )
         answer = f"{answer}\n\n---\n{warning}"
 
-    if generate_followups:
+    followups = []
+    if should_generate:
         followups = get_followup_questions(user_message, answer)
-    else:
-        followups = []
 
     return {
         "answer": answer,
         "sources": sources,
         "followups": followups,
-        "used_rag": use_rag and len(rag_context) > 0,
-        "rag_context": rag_context,
-        "mode": mode
+        "web_results": web_results  # NEW (just passing through for now)
     }
 
 ### ----------------------------------------------------------------------------------------------------

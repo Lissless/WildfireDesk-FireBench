@@ -112,7 +112,6 @@
     <!-- right sidebar for settings -->
     <aside class="settings-sidebar">
 
-      <!-- help link -->
       <div class="how-it-works-card">
         <button id="how-it-works-btn" class="how-it-works-row" type="button">
           <span class="how-text">How Sage works</span>
@@ -124,7 +123,7 @@
         <div class="settings-header">
           <h2>Settings</h2>
         </div>
-        
+
         <div class="settings-section">
           <div class="settings-label-row">
             <span class="settings-label">Response mode</span>
@@ -149,6 +148,33 @@
             <input type="radio" name="sage-mode" value="general">
             General response
           </label>
+        </div>
+
+        <div class="settings-divider"></div>
+
+        <div class="settings-section">
+          <div class="settings-label-row">
+            <span class="settings-label">Use local news</span>
+          </div>
+
+          <label class="toggle-row" for="local-news-toggle">
+            <span class="toggle-text">Include local news context</span>
+            <input type="checkbox" id="local-news-toggle">
+          </label>
+        </div>
+
+        <div class="settings-divider"></div>
+
+        <div class="settings-section">
+          <label class="settings-label" for="state-select">State</label>
+          <select id="state-select" class="settings-select">
+            <option value="">Select a state</option>
+            <option value="California">California</option>
+            <option value="Massachusetts">Massachusetts</option>
+            <option value="New York">New York</option>
+            <option value="Texas">Texas</option>
+            <option value="Florida">Florida</option>
+          </select>
         </div>
       </div>
     </aside>
@@ -207,6 +233,8 @@
   const introMessage = document.getElementById("intro-message");
   const appShell = document.querySelector(".app-shell");
   const sidebarToggle = document.getElementById("sidebar-toggle");
+  const localNewsToggle = document.getElementById("local-news-toggle");
+  const stateSelect = document.getElementById("state-select");
 
   const starterQuestions = [
     "How do I organize my neighbors after a wildfire?",
@@ -616,13 +644,10 @@
       const response = await fetch("/intro");
       const data = await response.json();
 
-      console.log("intro response:", data);
-
       introMessage.remove();
       addMessage(data.intro, "sage", null, false);
       addStarterQuestions();
     } catch (error) {
-      console.error("intro failed:", error);
       introMessage.textContent = "Could not load Sage.";
     }
   }
@@ -653,13 +678,21 @@
     chat.appendChild(loadingWrapper);
     chat.scrollTop = chat.scrollHeight;
 
+    console.log("sending settings:", {
+      mode: selectedMode,
+      use_local_news: localNewsToggle.checked,
+      selected_state: stateSelect.value
+    });
+
     try {
       const response = await fetch("/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message,
-          mode: selectedMode
+          mode: selectedMode,
+          use_local_news: localNewsToggle.checked,
+          selected_state: stateSelect.value
         })
       });
 
