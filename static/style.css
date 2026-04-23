@@ -1055,3 +1055,40 @@ body {
   font-size: 13px;
   font-weight: 700;
 }
+
+.structured-reply-block {
+  width: min(760px, 100%);
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.structured-reply-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #66758f;
+}
+
+.structured-reply-button {
+  border: 1px solid #c8d7c2;
+  background: #eef6ea;
+  color: #35624a;
+  border-radius: 999px;
+  padding: 14px 20px;
+  font-size: 15px;
+  cursor: pointer;
+  max-width: 100%;
+  text-align: left;
+}
+
+.structured-reply-button:hover {
+  background: #e4f0df;
+}
+
+.followup-questions .starter-question-button {
+  border: 1px solid #bfd1ea;
+  background: #edf4fd;
+  color: #3b5f92;
+}
