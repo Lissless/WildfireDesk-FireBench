@@ -182,6 +182,13 @@ def get_outlet_cache_path(outlet_name):
     return f"{news_resources}/{safe_name}.jsonl"
 
 
+# function: get_state_file_path
+# converts display state names like "New York" into the actual underscore filename
+def get_state_file_path(state):
+    safe_state = state.replace(" ", "_")
+    return f"{news_region_resources}/{safe_state}.jsonl"
+
+
 # function: get_all_supported_states
 # returns all supported states from the outlet files
 def get_all_supported_states():
@@ -199,7 +206,7 @@ def get_all_supported_states():
 # returns all supported communities for one state
 def get_all_supported_communities(state):
     communities = set()
-    state_file = f"{news_region_resources}/{state}.jsonl"
+    state_file = get_state_file_path(state)
 
     with open(state_file, "r", encoding="utf-8") as infile:
         for line in infile:
@@ -678,6 +685,10 @@ def site_crawl(depth, url, usr, results, mode, retry=2, visited=None):
 # function: search_web
 # runs the full ivy flow to find relevant local news for a user query
 def search_web(usr, state, community):
+    effective_community = community
+    if effective_community is not None and not str(effective_community).strip():
+        effective_community = None
+
     discern_query = f"The user said this: {usr}\nwould a response to the above benefit from information from local news coverage?"
 
     discern_retry = 2
@@ -703,8 +714,8 @@ def search_web(usr, state, community):
         print("Discernment failed")
         return []
 
-    state_file = f"{news_region_resources}/{state}.jsonl"
-    outlet_records = get_all_crawl_data(state_file, community)
+    state_file = get_state_file_path(state)
+    outlet_records = get_all_crawl_data(state_file, effective_community)
 
     all_outlet_res = []
     for outlet_rec in outlet_records:
