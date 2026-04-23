@@ -40,9 +40,11 @@ sage_rag_k = 5
 sage_intro_session_id = "sage_intro_" + str(timestamp)
 
 ### ----------------------------------------------------------------------------------------------------
-### Helpers
+### File and Prompt Helper Functions
 ### ----------------------------------------------------------------------------------------------------
 
+# function: load_text_file
+# loads a text file and returns contents, handles file errors
 def load_text_file(filepath):
     try:
         with open(filepath, "r", encoding="utf-8") as f:
@@ -58,6 +60,8 @@ def load_text_file(filepath):
         return None
 
 
+# function: build_sage_system_prompt
+# combines all instruction files into one system prompt
 def build_sage_system_prompt():
     return "\n\n".join([
         sage_tone,
@@ -69,6 +73,16 @@ def build_sage_system_prompt():
     ])
 
 
+# function: get_sage_session_id
+# picks the grounded or general session id
+def get_sage_session_id(include_rag=True):
+    if include_rag:
+        return sage_grounded_session_id
+    return sage_general_session_id
+
+
+# function: rag_context_string_simple
+# formats rag results into plain text for the prompt
 def rag_context_string_simple(rag_context):
     context_string = ""
     i = 1
@@ -92,6 +106,8 @@ def rag_context_string_simple(rag_context):
     return context_string
 
 
+# function: parse_retrieve_rag_context
+# turns rag results into a numbered summary list
 def parse_retrieve_rag_context(rag_ctx):
     summaries = ""
     index = 1
@@ -102,13 +118,12 @@ def parse_retrieve_rag_context(rag_ctx):
 
     return summaries, index
 
+### ----------------------------------------------------------------------------------------------------
+### Web Context and Source Formatting Functions
+### ----------------------------------------------------------------------------------------------------
 
-def get_sage_session_id(include_rag=True):
-    if include_rag:
-        return sage_grounded_session_id
-    return sage_general_session_id
-
-
+# function: format_web_results_for_prompt
+# formats ivy results into readable text for sage input
 def format_web_results_for_prompt(web_results):
     if not web_results:
         return ""
@@ -130,10 +145,40 @@ def format_web_results_for_prompt(web_results):
 
     return "\n".join(lines)
 
+
+# function: get_web_sources
+# converts ivy results into citation text for the frontend
+def get_web_sources(web_results):
+    if not web_results:
+        return None
+
+    intro = (
+        "This answer also draws from recent local news coverage that may be relevant "
+        "to the user's question."
+    )
+
+    lines = [intro]
+    for i, record in enumerate(web_results, start=1):
+        outlet = record.get("Outlet", "").strip()
+        url = record.get("URL", "").strip()
+        timestamp = record.get("Timestamp", "").strip()
+
+        citation = outlet
+        if timestamp:
+            citation += f". {timestamp}."
+        if url:
+            citation += f" {url}"
+
+        lines.append(f"{i}. {citation}")
+
+    return "\n".join(lines)
+
 ### ----------------------------------------------------------------------------------------------------
-### Sage Setup
+### Sage Upload and Setup Functions
 ### ----------------------------------------------------------------------------------------------------
 
+# function: upload_to_sage
+# uploads one file into sage's rag store
 def upload_to_sage(filepath):
     response = sage.upload_file(
         file_path=filepath,
@@ -159,6 +204,8 @@ def upload_to_sage(filepath):
     return resp_message == "success"
 
 
+# function: upload_2d_directory
+# uploads files from a directory into sage's rag store
 def upload_2d_directory(filepath_str):
     p = Path(filepath_str)
 
@@ -176,6 +223,8 @@ def upload_2d_directory(filepath_str):
     return True
 
 
+# function: setup_sage
+# loads sage instruction files and prepares the app
 def setup_sage():
     global sage_tone
     global sage_interaction
@@ -217,9 +266,11 @@ def setup_sage():
     return True
 
 ### ----------------------------------------------------------------------------------------------------
-### Core Chat Logic
+### Sage Generation and Citation Functions
 ### ----------------------------------------------------------------------------------------------------
 
+# function: prompt_sage
+# sends a query to sage and optionally includes rag and web context
 def prompt_sage(query_prompt, include_rag=True, web_context=""):
     final_query = ""
     rag_context = []
@@ -258,6 +309,8 @@ def prompt_sage(query_prompt, include_rag=True, web_context=""):
     return response, rag_context
 
 
+# function: get_intro
+# generates sage's intro message
 def get_intro():
     full_system_prompt = build_sage_system_prompt()
 
@@ -273,6 +326,8 @@ def get_intro():
     return response["result"]
 
 
+# function: get_source
+# generates a citation summary from rag context using sage
 def get_source(rag_context):
     doc_summaries, _ = parse_retrieve_rag_context(rag_context)
 
@@ -324,7 +379,12 @@ def get_source(rag_context):
     response, _ = prompt_sage(citation_prompt)
     return response["result"]
 
+### ----------------------------------------------------------------------------------------------------
+### Response Classification Functions
+### ----------------------------------------------------------------------------------------------------
 
+# function: should_show_citations
+# decides if the current sage answer should show sources
 def should_show_citations(answer):
     cleaned = answer.strip()
 
@@ -357,6 +417,8 @@ def should_show_citations(answer):
     return decision == "YES"
 
 
+# function: should_generate_followups
+# decides if the ui should show suggested follow-up questions
 def should_generate_followups(answer):
     cleaned = answer.strip()
     lowered = cleaned.lower()
@@ -404,6 +466,8 @@ def should_generate_followups(answer):
     return response["result"].strip().upper() == "YES"
 
 
+# function: get_followup_questions
+# generates 2 likely next questions from the user's perspective
 def get_followup_questions(user_message, answer):
     followup_prompt = f"""
     You are simulating what the USER is likely thinking after reading an answer.
@@ -459,22 +523,21 @@ def get_followup_questions(user_message, answer):
         "Can you help me turn that into a message or agenda?"
     ]
 
+### ----------------------------------------------------------------------------------------------------
+### Core Chat Functions
+### ----------------------------------------------------------------------------------------------------
 
-def chat_with_sage(user_message, mode="grounded", use_local_news=False, selected_state="", selected_community=""):
+# function: chat_with_sage
+# runs main chat flow and combines rag, ivy results, citations, and followups
+def chat_with_sage(user_message, mode="grounded", use_local_news=False, selected_state=""):
     use_rag = (mode == "grounded")
 
     web_results = []
     if use_local_news and selected_state:
         try:
-            effective_community = selected_community.strip() if selected_community else None
-            if effective_community == "":
-                effective_community = None
-
-            web_results = search_web(user_message, selected_state, effective_community)
-
+            web_results = search_web(user_message, selected_state, None)
         except Exception as e:
             print("Web search error:", e)
-            web_results = []
 
     web_context = format_web_results_for_prompt(web_results)
 
@@ -489,10 +552,23 @@ def chat_with_sage(user_message, mode="grounded", use_local_news=False, selected
     show_citations = should_show_citations(answer)
     should_generate = should_generate_followups(answer)
 
-    if use_rag and show_citations and len(rag_context) > 0:
-        sources = get_source(rag_context)
-    elif not use_rag and not should_generate:
-        pass
+    rag_sources = None
+    web_sources = None
+
+    if show_citations:
+        if use_rag and len(rag_context) > 0:
+            rag_sources = get_source(rag_context)
+
+        if len(web_results) > 0:
+            web_sources = get_web_sources(web_results)
+
+        if rag_sources and web_sources:
+            sources = f"{rag_sources}\n{web_sources}"
+        elif rag_sources:
+            sources = rag_sources
+        elif web_sources:
+            sources = web_sources
+
     elif not use_rag and should_generate:
         warning = (
             "Note: This answer is based on general knowledge and may not reflect "
@@ -509,14 +585,15 @@ def chat_with_sage(user_message, mode="grounded", use_local_news=False, selected
         "answer": answer,
         "sources": sources,
         "followups": followups,
-        "web_results": web_results,
-        "rag_context": rag_context,
+        "web_results": web_results
     }
 
 ### ----------------------------------------------------------------------------------------------------
 ### Logging Functions, Assess Question
 ### ----------------------------------------------------------------------------------------------------
 
+# function: log_user
+# writes the user's message to the log and prints it if verbose
 def log_user(file, text, verbose=verbose):
     phrase = "Anon: " + text + "\n\n"
     file.write(phrase)
@@ -525,6 +602,8 @@ def log_user(file, text, verbose=verbose):
         print(phrase)
 
 
+# function: log_sage
+# writes sage's response to the log and can print rag debug info
 def log_sage(file, response, rag_context, verbose=verbose, display_rag=display_rag):
     phrase = ""
 
@@ -546,6 +625,8 @@ def log_sage(file, response, rag_context, verbose=verbose, display_rag=display_r
         print(f"""\n******************\nRag_context_length: {len(rag_context)} \n******************\n\n""")
 
 
+# function: assess_question_type
+# classifies the user's question using question-types.pdf
 def assess_question_type(file, text):
     assess_prompt = f"""The user has asked this: {text}\n\n Based on question-types.pdf, what category does this question fall into?
     If it is not a question say its category is Non-Question. Give your reasoning for your choice. The final answer should follow a newline character."""
@@ -556,6 +637,8 @@ def assess_question_type(file, text):
 ### Command Line Interface
 ### ----------------------------------------------------------------------------------------------------
 
+# function: run_cli
+# runs the command line version of the chatbot
 def run_cli():
     if not setup_sage():
         print("An error occurred when setting up this application.")

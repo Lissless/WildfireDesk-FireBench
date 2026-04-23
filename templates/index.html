@@ -1,21 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- basic page metadata -->
+  <!-- page metadata -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WildfireDesk</title>
 
-  <!-- connect external css file -->
+  <!-- external stylesheet -->
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
-  <!-- import inter font -->
+  <!-- font import -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
   <div class="app-shell">
 
-    <!-- left sidebar with product info and privacy -->
+    <!-- ================================================== -->
+    <!-- left sidebar -->
+    <!-- ================================================== -->
     <aside class="sidebar">
 
       <div class="sidebar-brand">
@@ -78,8 +81,12 @@
       </div>
     </aside>
 
+    <!-- sidebar collapse button -->
     <button id="sidebar-toggle" class="sidebar-toggle" type="button">‹</button>
 
+    <!-- ================================================== -->
+    <!-- main chat area -->
+    <!-- ================================================== -->
     <main class="app">
       <div class="header">
         <div class="chat-title-row">
@@ -100,6 +107,9 @@
       </div>
     </main>
 
+    <!-- ================================================== -->
+    <!-- right settings sidebar -->
+    <!-- ================================================== -->
     <aside class="settings-sidebar">
       <div class="how-it-works-card">
         <button id="how-it-works-btn" class="how-it-works-row" type="button">
@@ -175,6 +185,9 @@
       </div>
     </aside>
 
+    <!-- ================================================== -->
+    <!-- welcome modal -->
+    <!-- ================================================== -->
     <div id="welcome-modal" class="welcome-modal hidden">
       <div class="welcome-card">
         <button id="welcome-close" class="welcome-close" type="button" aria-label="Close tutorial">
@@ -214,582 +227,566 @@
 
   </div>
 
+  <!-- external script -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-<script>
-  /**************************************************/
-  /* main dom references */
-  /**************************************************/
-
-  const chat = document.getElementById("chat");
-  const userInput = document.getElementById("user-input");
-  const sendButton = document.getElementById("send-button");
-  const introMessage = document.getElementById("intro-message");
-  const appShell = document.querySelector(".app-shell");
-  const sidebarToggle = document.getElementById("sidebar-toggle");
-  const localNewsToggle = document.getElementById("local-news-toggle");
-  const stateSelect = document.getElementById("state-select");
-  const communitySelect = document.getElementById("community-select");
-  const stateCommunityMap = {{ state_community_map_json | safe }};
-
-  const starterQuestions = [
-    "How do I organize my neighbors after a wildfire?",
-    "How can I start a community group for recovery efforts?",
-    "What should we include in a first neighborhood meeting?",
-    "How do we coordinate rebuilding efforts as a group?"
-  ];
-
-  /**************************************************/
-  /* sidebar collapse */
-  /**************************************************/
-
-  sidebarToggle.addEventListener("click", () => {
-    const collapsed = appShell.classList.toggle("sidebar-collapsed");
-    sidebarToggle.textContent = collapsed ? "›" : "‹";
-  });
-
-  /**************************************************/
-  /* privacy expand */
-  /**************************************************/
-
-  function togglePrivacy(button) {
-    const content = button.parentElement.querySelector(".expand-content");
-    const isOpen = content.classList.contains("open");
-
-    if (isOpen) {
-      content.classList.remove("open");
-      button.innerHTML = 'See more <span class="arrow">▾</span>';
-    } else {
-      content.classList.add("open");
-      button.innerHTML = 'See less <span class="arrow">▴</span>';
-    }
-  }
-
-  /**************************************************/
-  /* community dropdown */
-  /**************************************************/
-
-  function populateCommunityOptions(selectedState) {
-    communitySelect.innerHTML = "";
-
-    const defaultOption = document.createElement("option");
-    defaultOption.value = "";
-    defaultOption.textContent = "All communities";
-    communitySelect.appendChild(defaultOption);
-
-    if (!selectedState || !stateCommunityMap[selectedState]) {
-      return;
-    }
-
-    stateCommunityMap[selectedState].forEach((community) => {
-      const option = document.createElement("option");
-      option.value = community;
-      option.textContent = community;
-      communitySelect.appendChild(option);
-    });
-  }
-
-  stateSelect.addEventListener("change", () => {
-    populateCommunityOptions(stateSelect.value);
-  });
-
-  /**************************************************/
-  /* download and editing helpers */
-  /**************************************************/
-
-  function downloadWordDoc(filename, htmlContent) {
-    const fullHtml = `
-      <html xmlns:o="urn:schemas-microsoft-com:office:office"
-            xmlns:w="urn:schemas-microsoft-com:office:word"
-            xmlns="http://www.w3.org/TR/REC-html40">
-        <head>
-          <meta charset="utf-8">
-          <title>${filename}</title>
-        </head>
-        <body>
-          ${htmlContent}
-        </body>
-      </html>
-    `;
-
-    const blob = new Blob(['\ufeff', fullHtml], { type: 'application/msword' });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    URL.revokeObjectURL(url);
-  }
-
-  function autoResizeTextarea(textarea) {
-    textarea.style.height = "auto";
-    const maxHeight = window.innerHeight * 0.7;
-    textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + "px";
-  }
-
-  /**************************************************/
-  /* linkify urls */
-  /**************************************************/
-
-  function linkifyText(text) {
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-
-    return text.replace(urlRegex, function(url) {
-      return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
-    });
-  }
-
-  /**************************************************/
-  /* citation formatting */
-  /**************************************************/
-
-  function formatSources(sources) {
-    if (typeof sources !== "string") {
-      return `<p>${JSON.stringify(sources, null, 2)}</p>`;
-    }
-
-    const text = sources.trim();
-
-    if (text.includes("<")) {
-      return sources;
-    }
-
-    const firstCitationMatch = text.match(/(?:^|\n)\s*1[\).\s]/);
-
-    let introText = "";
-    let citationsText = text;
-
-    if (firstCitationMatch && firstCitationMatch.index > 0) {
-      introText = text.slice(0, firstCitationMatch.index).trim();
-      citationsText = text.slice(firstCitationMatch.index).trim();
-    }
-
-    const citationBlocks = citationsText
-      .split(/\n(?=\s*\d+[\).\s])/)
-      .map(block => block.trim())
-      .filter(block => /^\d+[\).\s]/.test(block));
-
-    if (citationBlocks.length === 0) {
-      return marked.parse(sources);
-    }
-
-    const introHtml = introText
-      ? `<p>${introText.replace(/\n/g, "<br>")}</p>`
-      : "";
-
-    const citationsHtml = citationBlocks.map((block, index) => {
-      const cleaned = linkifyText(
-        block.replace(/^\d+[\).\s]+/, "").trim()
-      );
-
-      return `
-        <div class="source-item">
-          <div class="source-number">${index + 1}</div>
-          <div class="source-body">
-            <div class="source-text">${cleaned}</div>
-          </div>
-        </div>
-      `;
-    }).join("");
-
-    return `
-      ${introHtml}
-      <div class="sources-card">
-        <div class="sources-heading">SOURCES</div>
-        ${citationsHtml}
-      </div>
-    `;
-  }
-
-  /**************************************************/
-  /* textarea auto grow */
-  /**************************************************/
-
-  userInput.addEventListener("input", () => {
-    userInput.style.height = "auto";
-    userInput.style.height = userInput.scrollHeight + "px";
-  });
-
-  /**************************************************/
-  /* message rendering */
-  /**************************************************/
-
-  function addMessage(text, sender, sources = null, showActions = true, followups = []) {
-    const wrapper = document.createElement("div");
-    wrapper.className = `message-wrapper ${sender}`;
-
-    const bubble = document.createElement("div");
-    bubble.className = `message ${sender}`;
-
-    const contentDiv = document.createElement("div");
-    contentDiv.className = "message-content";
-    contentDiv.innerHTML = marked.parse(text);
-    bubble.appendChild(contentDiv);
-
-    let sourcesDiv = null;
-
-    if (sender === "sage" && showActions) {
-      const actions = document.createElement("div");
-      actions.className = "message-actions";
-
-      const copyBtn = document.createElement("button");
-      copyBtn.className = "action-button";
-      copyBtn.textContent = "Copy";
-
-      const editBtn = document.createElement("button");
-      editBtn.className = "action-button";
-      editBtn.textContent = "Edit";
-
-      const downloadBtn = document.createElement("button");
-      downloadBtn.className = "action-button";
-      downloadBtn.textContent = "Download";
-
-      let isEditing = false;
-      let textarea = null;
-      let originalText = text;
-
-      copyBtn.onclick = async () => {
-        await navigator.clipboard.writeText(contentDiv.innerText);
-        copyBtn.textContent = "Copied";
-        setTimeout(() => {
-          copyBtn.textContent = "Copy";
-        }, 1500);
-      };
-
-      editBtn.onclick = () => {
-        if (!isEditing) {
-          isEditing = true;
-
-          textarea = document.createElement("textarea");
-          textarea.className = "message-editor";
-          textarea.value = originalText;
-
-          bubble.replaceChild(textarea, contentDiv);
-          bubble.classList.add("editing");
-
-          editBtn.textContent = "Save";
-
-          requestAnimationFrame(() => {
-            autoResizeTextarea(textarea);
-            textarea.focus();
-            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-          });
-
-          textarea.addEventListener("input", () => autoResizeTextarea(textarea));
-
-          let cancelBtn = actions.querySelector('[data-role="cancel"]');
-
-          if (!cancelBtn) {
-            cancelBtn = document.createElement("button");
-            cancelBtn.className = "action-button cancel-button";
-            cancelBtn.textContent = "Cancel";
-            cancelBtn.dataset.role = "cancel";
-
-            cancelBtn.onclick = () => {
-              isEditing = false;
-              contentDiv.innerHTML = marked.parse(originalText);
-              bubble.replaceChild(contentDiv, textarea);
-              bubble.classList.remove("editing");
-              editBtn.textContent = "Edit";
-              cancelBtn.remove();
-            };
-
-            actions.appendChild(cancelBtn);
-          }
-
-        } else {
-          isEditing = false;
-
-          originalText = textarea.value;
-          contentDiv.innerHTML = marked.parse(originalText);
-
-          bubble.replaceChild(contentDiv, textarea);
-          bubble.classList.remove("editing");
-          editBtn.textContent = "Edit";
-
-          const cancelBtn = actions.querySelector('[data-role="cancel"]');
-          if (cancelBtn) cancelBtn.remove();
-        }
-      };
-
-      downloadBtn.onclick = () => {
-        const temp = document.createElement("div");
-        temp.innerHTML = contentDiv.innerHTML;
-
-        if (sourcesDiv) {
-          temp.appendChild(document.createElement("hr"));
-          temp.appendChild(sourcesDiv.cloneNode(true));
-        }
-
-        downloadWordDoc("sage-response.doc", temp.innerHTML);
-      };
-
-      actions.appendChild(copyBtn);
-      actions.appendChild(editBtn);
-      actions.appendChild(downloadBtn);
-      bubble.appendChild(actions);
-    }
-
-    wrapper.appendChild(bubble);
-
-    if (sources) {
-      const citationsArea = document.createElement("div");
-      citationsArea.className = "citations-area";
-
-      const sourcesToggle = document.createElement("button");
-      sourcesToggle.className = "sources-toggle";
-      sourcesToggle.type = "button";
-      sourcesToggle.innerHTML = 'Where did this information come from? <span class="sources-arrow">▾</span>';
-
-      sourcesDiv = document.createElement("div");
-      sourcesDiv.className = "sources collapsible-sources";
-      sourcesDiv.innerHTML = formatSources(sources);
-
-      sourcesToggle.addEventListener("click", () => {
-        const isOpen = sourcesDiv.classList.contains("open");
-        const arrow = sourcesToggle.querySelector(".sources-arrow");
-
-        if (isOpen) {
-          sourcesDiv.classList.remove("open");
-          arrow.textContent = "▾";
-        } else {
-          sourcesDiv.classList.add("open");
-          arrow.textContent = "▴";
-
-          requestAnimationFrame(() => {
-            sourcesDiv.scrollIntoView({ behavior: "smooth", block: "end" });
-          });
-        }
-      });
-
-      citationsArea.appendChild(sourcesToggle);
-      citationsArea.appendChild(sourcesDiv);
-      wrapper.appendChild(citationsArea);
-    }
-
-    if (sender === "sage" && followups.length > 0) {
-      addFollowupQuestions(wrapper, followups);
-    }
-
-    chat.appendChild(wrapper);
-
-    if (sender !== "sage") {
-      chat.scrollTop = chat.scrollHeight;
-    }
-
-    return wrapper;
-  }
-
-  /**************************************************/
-  /* starter questions */
-  /**************************************************/
-
-  function addStarterQuestions() {
-    const wrapper = document.createElement("div");
-    wrapper.className = "starter-questions";
-    wrapper.id = "starter-questions";
-
-    const label = document.createElement("div");
-    label.className = "starter-label";
-    label.textContent = "You can start by asking:";
-    wrapper.appendChild(label);
-
-    starterQuestions.forEach((question) => {
-      const button = document.createElement("button");
-      button.className = "starter-question-button";
-      button.type = "button";
-      button.textContent = question;
-
-      button.addEventListener("click", () => {
-        userInput.value = question;
-
-        const starterBlock = document.getElementById("starter-questions");
-        if (starterBlock) {
-          starterBlock.remove();
-        }
-
-        sendMessage();
-      });
-
-      wrapper.appendChild(button);
+  <script>
+    /* ================================================== */
+    /* dom references and startup data */
+    /* ================================================== */
+
+    const chat = document.getElementById("chat");
+    const userInput = document.getElementById("user-input");
+    const sendButton = document.getElementById("send-button");
+    const introMessage = document.getElementById("intro-message");
+    const appShell = document.querySelector(".app-shell");
+    const sidebarToggle = document.getElementById("sidebar-toggle");
+    const localNewsToggle = document.getElementById("local-news-toggle");
+    const stateSelect = document.getElementById("state-select");
+    const communitySelect = document.getElementById("community-select");
+    const stateCommunityMap = {{ state_community_map_json | safe }};
+
+    const welcomeModal = document.getElementById("welcome-modal");
+    const welcomeClose = document.getElementById("welcome-close");
+    const welcomeStart = document.getElementById("welcome-start");
+    const howItWorksBtn = document.getElementById("how-it-works-btn");
+
+    const starterQuestions = [
+      "How do I organize my neighbors after a wildfire?",
+      "How can I start a community group for recovery efforts?",
+      "What should we include in a first neighborhood meeting?",
+      "How do we coordinate rebuilding efforts as a group?"
+    ];
+
+    /* ================================================== */
+    /* sidebar ui */
+    /* ================================================== */
+
+    sidebarToggle.addEventListener("click", () => {
+      const collapsed = appShell.classList.toggle("sidebar-collapsed");
+      sidebarToggle.textContent = collapsed ? "›" : "‹";
     });
 
-    chat.appendChild(wrapper);
-  }
+    function togglePrivacy(button) {
+      const content = button.parentElement.querySelector(".expand-content");
+      const isOpen = content.classList.contains("open");
 
-  /**************************************************/
-  /* follow-up questions */
-  /**************************************************/
-
-  function addFollowupQuestions(parentWrapper, questions) {
-    if (!questions || questions.length === 0) return;
-
-    const wrapper = document.createElement("div");
-    wrapper.className = "starter-questions followup-questions";
-
-    const label = document.createElement("div");
-    label.className = "starter-label";
-    label.textContent = "You might be thinking...";
-    wrapper.appendChild(label);
-
-    questions.slice(0, 2).forEach((question) => {
-      const button = document.createElement("button");
-      button.className = "starter-question-button";
-      button.type = "button";
-      button.textContent = question;
-
-      button.addEventListener("click", () => {
-        userInput.value = question;
-        userInput.style.height = "auto";
-        userInput.style.height = userInput.scrollHeight + "px";
-
-        wrapper.remove();
-
-        sendMessage();
-      });
-
-      wrapper.appendChild(button);
-    });
-
-    parentWrapper.appendChild(wrapper);
-  }
-
-  /**************************************************/
-  /* api calls */
-  /**************************************************/
-
-  async function loadIntro() {
-    try {
-      const response = await fetch("/intro");
-      const data = await response.json();
-
-      introMessage.remove();
-      addMessage(data.intro, "sage", null, false);
-      addStarterQuestions();
-    } catch (error) {
-      introMessage.textContent = "Could not load Sage.";
+      if (isOpen) {
+        content.classList.remove("open");
+        button.innerHTML = 'See more <span class="arrow">▾</span>';
+      } else {
+        content.classList.add("open");
+        button.innerHTML = 'See less <span class="arrow">▴</span>';
+      }
     }
-  }
 
-  async function sendMessage() {
-    const message = userInput.value.trim();
-    if (!message) return;
+    /* ================================================== */
+    /* community dropdown */
+    /* ================================================== */
 
-    const selectedMode = document.querySelector('input[name="sage-mode"]:checked').value;
+    function populateCommunityOptions(selectedState) {
+      communitySelect.innerHTML = "";
 
-    addMessage(message, "user");
-    userInput.value = "";
-    userInput.style.height = "auto";
+      const defaultOption = document.createElement("option");
+      defaultOption.value = "";
+      defaultOption.textContent = "All communities";
+      communitySelect.appendChild(defaultOption);
 
-    const loadingWrapper = document.createElement("div");
-    loadingWrapper.className = "message-wrapper sage";
-
-    const loading = document.createElement("div");
-    loading.className = "message sage loading";
-    loading.innerHTML = `
-      <span class="loading-text">Sage is thinking</span>
-      <span class="loading-dots">
-        <span>.</span><span>.</span><span>.</span>
-      </span>
-    `;
-
-    loadingWrapper.appendChild(loading);
-    chat.appendChild(loadingWrapper);
-    chat.scrollTop = chat.scrollHeight;
-
-    console.log("sending settings:", {
-      mode: selectedMode,
-      use_local_news: localNewsToggle.checked,
-      selected_state: stateSelect.value,
-      selected_community: communitySelect.value
-    });
-
-    try {
-      const response = await fetch("/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message,
-          mode: selectedMode,
-          use_local_news: localNewsToggle.checked,
-          selected_state: stateSelect.value,
-          selected_community: communitySelect.value
-        })
-      });
-
-      const data = await response.json();
-      console.log("chat response:", data);
-
-      loadingWrapper.remove();
-
-      if (data.error) {
-        addMessage(data.error, "sage");
+      if (!selectedState || !stateCommunityMap[selectedState]) {
         return;
       }
 
-      const messageWrapper = addMessage(
-        data.answer,
-        "sage",
-        data.sources,
-        true,
-        data.followups || []
-      );
+      stateCommunityMap[selectedState].forEach((community) => {
+        const option = document.createElement("option");
+        option.value = community;
+        option.textContent = community;
+        communitySelect.appendChild(option);
+      });
+    }
 
-      requestAnimationFrame(() => {
-        messageWrapper.scrollIntoView({ behavior: "smooth", block: "start" });
+    stateSelect.addEventListener("change", () => {
+      populateCommunityOptions(stateSelect.value);
+    });
+
+    /* ================================================== */
+    /* input and download helpers */
+    /* ================================================== */
+
+    function downloadWordDoc(filename, htmlContent) {
+      const fullHtml = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office"
+              xmlns:w="urn:schemas-microsoft-com:office:word"
+              xmlns="http://www.w3.org/TR/REC-html40">
+          <head>
+            <meta charset="utf-8">
+            <title>${filename}</title>
+          </head>
+          <body>
+            ${htmlContent}
+          </body>
+        </html>
+      `;
+
+      const blob = new Blob(['\ufeff', fullHtml], { type: 'application/msword' });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      URL.revokeObjectURL(url);
+    }
+
+    function autoResizeTextarea(textarea) {
+      textarea.style.height = "auto";
+      const maxHeight = window.innerHeight * 0.7;
+      textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + "px";
+    }
+
+    userInput.addEventListener("input", () => {
+      userInput.style.height = "auto";
+      userInput.style.height = userInput.scrollHeight + "px";
+    });
+
+    /* ================================================== */
+    /* source and link formatting */
+    /* ================================================== */
+
+    function linkifyText(text) {
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+
+      return text.replace(urlRegex, function(url) {
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+      });
+    }
+
+    function formatSources(sources) {
+      if (typeof sources !== "string") {
+        return `<p>${JSON.stringify(sources, null, 2)}</p>`;
+      }
+
+      const text = sources.trim();
+
+      if (text.includes("<")) {
+        return sources;
+      }
+
+      const firstCitationMatch = text.match(/(?:^|\n)\s*1[\).\s]/);
+
+      let introText = "";
+      let citationsText = text;
+
+      if (firstCitationMatch && firstCitationMatch.index > 0) {
+        introText = text.slice(0, firstCitationMatch.index).trim();
+        citationsText = text.slice(firstCitationMatch.index).trim();
+      }
+
+      const citationBlocks = citationsText
+        .split(/\n(?=\s*\d+[\).\s])/)
+        .map(block => block.trim())
+        .filter(block => /^\d+[\).\s]/.test(block));
+
+      if (citationBlocks.length === 0) {
+        return marked.parse(sources);
+      }
+
+      const introHtml = introText
+        ? `<p>${introText.replace(/\n/g, "<br>")}</p>`
+        : "";
+
+      const citationsHtml = citationBlocks.map((block, index) => {
+        const cleaned = linkifyText(
+          block.replace(/^\d+[\).\s]+/, "").trim()
+        );
+
+        return `
+          <div class="source-item">
+            <div class="source-number">${index + 1}</div>
+            <div class="source-body">
+              <div class="source-text">${cleaned}</div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      return `
+        ${introHtml}
+        <div class="sources-card">
+          <div class="sources-heading">SOURCES</div>
+          ${citationsHtml}
+        </div>
+      `;
+    }
+
+    /* ================================================== */
+    /* message rendering */
+    /* ================================================== */
+
+    function addMessage(text, sender, sources = null, showActions = true, followups = []) {
+      const wrapper = document.createElement("div");
+      wrapper.className = `message-wrapper ${sender}`;
+
+      const bubble = document.createElement("div");
+      bubble.className = `message ${sender}`;
+
+      const contentDiv = document.createElement("div");
+      contentDiv.className = "message-content";
+      contentDiv.innerHTML = marked.parse(text);
+      bubble.appendChild(contentDiv);
+
+      let sourcesDiv = null;
+
+      if (sender === "sage" && showActions) {
+        const actions = document.createElement("div");
+        actions.className = "message-actions";
+
+        const copyBtn = document.createElement("button");
+        copyBtn.className = "action-button";
+        copyBtn.textContent = "Copy";
+
+        const editBtn = document.createElement("button");
+        editBtn.className = "action-button";
+        editBtn.textContent = "Edit";
+
+        const downloadBtn = document.createElement("button");
+        downloadBtn.className = "action-button";
+        downloadBtn.textContent = "Download";
+
+        let isEditing = false;
+        let textarea = null;
+        let originalText = text;
+
+        copyBtn.onclick = async () => {
+          await navigator.clipboard.writeText(contentDiv.innerText);
+          copyBtn.textContent = "Copied";
+          setTimeout(() => {
+            copyBtn.textContent = "Copy";
+          }, 1500);
+        };
+
+        editBtn.onclick = () => {
+          if (!isEditing) {
+            isEditing = true;
+
+            textarea = document.createElement("textarea");
+            textarea.className = "message-editor";
+            textarea.value = originalText;
+
+            bubble.replaceChild(textarea, contentDiv);
+            bubble.classList.add("editing");
+
+            editBtn.textContent = "Save";
+
+            requestAnimationFrame(() => {
+              autoResizeTextarea(textarea);
+              textarea.focus();
+              textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+            });
+
+            textarea.addEventListener("input", () => autoResizeTextarea(textarea));
+
+            let cancelBtn = actions.querySelector('[data-role="cancel"]');
+
+            if (!cancelBtn) {
+              cancelBtn = document.createElement("button");
+              cancelBtn.className = "action-button cancel-button";
+              cancelBtn.textContent = "Cancel";
+              cancelBtn.dataset.role = "cancel";
+
+              cancelBtn.onclick = () => {
+                isEditing = false;
+                contentDiv.innerHTML = marked.parse(originalText);
+                bubble.replaceChild(contentDiv, textarea);
+                bubble.classList.remove("editing");
+                editBtn.textContent = "Edit";
+                cancelBtn.remove();
+              };
+
+              actions.appendChild(cancelBtn);
+            }
+
+          } else {
+            isEditing = false;
+
+            originalText = textarea.value;
+            contentDiv.innerHTML = marked.parse(originalText);
+
+            bubble.replaceChild(contentDiv, textarea);
+            bubble.classList.remove("editing");
+            editBtn.textContent = "Edit";
+
+            const cancelBtn = actions.querySelector('[data-role="cancel"]');
+            if (cancelBtn) cancelBtn.remove();
+          }
+        };
+
+        downloadBtn.onclick = () => {
+          const temp = document.createElement("div");
+          temp.innerHTML = contentDiv.innerHTML;
+
+          if (sourcesDiv) {
+            temp.appendChild(document.createElement("hr"));
+            temp.appendChild(sourcesDiv.cloneNode(true));
+          }
+
+          downloadWordDoc("sage-response.doc", temp.innerHTML);
+        };
+
+        actions.appendChild(copyBtn);
+        actions.appendChild(editBtn);
+        actions.appendChild(downloadBtn);
+        bubble.appendChild(actions);
+      }
+
+      wrapper.appendChild(bubble);
+
+      if (sources) {
+        const citationsArea = document.createElement("div");
+        citationsArea.className = "citations-area";
+
+        const sourcesToggle = document.createElement("button");
+        sourcesToggle.className = "sources-toggle";
+        sourcesToggle.type = "button";
+        sourcesToggle.innerHTML = 'Where did this information come from? <span class="sources-arrow">▾</span>';
+
+        sourcesDiv = document.createElement("div");
+        sourcesDiv.className = "sources collapsible-sources";
+        sourcesDiv.innerHTML = formatSources(sources);
+
+        sourcesToggle.addEventListener("click", () => {
+          const isOpen = sourcesDiv.classList.contains("open");
+          const arrow = sourcesToggle.querySelector(".sources-arrow");
+
+          if (isOpen) {
+            sourcesDiv.classList.remove("open");
+            arrow.textContent = "▾";
+          } else {
+            sourcesDiv.classList.add("open");
+            arrow.textContent = "▴";
+
+            requestAnimationFrame(() => {
+              sourcesDiv.scrollIntoView({ behavior: "smooth", block: "end" });
+            });
+          }
+        });
+
+        citationsArea.appendChild(sourcesToggle);
+        citationsArea.appendChild(sourcesDiv);
+        wrapper.appendChild(citationsArea);
+      }
+
+      if (sender === "sage" && followups.length > 0) {
+        addFollowupQuestions(wrapper, followups);
+      }
+
+      chat.appendChild(wrapper);
+
+      if (sender !== "sage") {
+        chat.scrollTop = chat.scrollHeight;
+      }
+
+      return wrapper;
+    }
+
+    /* ================================================== */
+    /* starter and follow-up question buttons */
+    /* ================================================== */
+
+    function addStarterQuestions() {
+      const wrapper = document.createElement("div");
+      wrapper.className = "starter-questions";
+      wrapper.id = "starter-questions";
+
+      const label = document.createElement("div");
+      label.className = "starter-label";
+      label.textContent = "You can start by asking:";
+      wrapper.appendChild(label);
+
+      starterQuestions.forEach((question) => {
+        const button = document.createElement("button");
+        button.className = "starter-question-button";
+        button.type = "button";
+        button.textContent = question;
+
+        button.addEventListener("click", () => {
+          userInput.value = question;
+
+          const starterBlock = document.getElementById("starter-questions");
+          if (starterBlock) {
+            starterBlock.remove();
+          }
+
+          sendMessage();
+        });
+
+        wrapper.appendChild(button);
       });
 
-    } catch {
-      loadingWrapper.remove();
-      addMessage("Something went wrong while contacting Sage.", "sage");
+      chat.appendChild(wrapper);
     }
-  }
 
-  /**************************************************/
-  /* welcome modal */
-  /**************************************************/
+    function addFollowupQuestions(parentWrapper, questions) {
+      if (!questions || questions.length === 0) return;
 
-  const welcomeModal = document.getElementById("welcome-modal");
-  const welcomeClose = document.getElementById("welcome-close");
-  const welcomeStart = document.getElementById("welcome-start");
+      const wrapper = document.createElement("div");
+      wrapper.className = "starter-questions followup-questions";
 
-  const howItWorksBtn = document.getElementById("how-it-works-btn");
-  howItWorksBtn.addEventListener("click", () => {
-    welcomeModal.classList.remove("hidden");
-  });
+      const label = document.createElement("div");
+      label.className = "starter-label";
+      label.textContent = "You might be thinking...";
+      wrapper.appendChild(label);
 
-  function maybeShowWelcomeModal() {
-    welcomeModal.classList.remove("hidden");
-  }
+      questions.slice(0, 2).forEach((question) => {
+        const button = document.createElement("button");
+        button.className = "starter-question-button";
+        button.type = "button";
+        button.textContent = question;
 
-  function closeWelcomeModal() {
-    welcomeModal.classList.add("hidden");
-    localStorage.setItem("sageWelcomeSeen", "true");
-  }
+        button.addEventListener("click", () => {
+          userInput.value = question;
+          userInput.style.height = "auto";
+          userInput.style.height = userInput.scrollHeight + "px";
 
-  welcomeClose.addEventListener("click", closeWelcomeModal);
-  welcomeStart.addEventListener("click", closeWelcomeModal);
+          wrapper.remove();
 
-  /**************************************************/
-  /* event listeners */
-  /**************************************************/
+          sendMessage();
+        });
 
-  sendButton.addEventListener("click", sendMessage);
+        wrapper.appendChild(button);
+      });
 
-  userInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
+      parentWrapper.appendChild(wrapper);
     }
-  });
 
-  loadIntro();
-  maybeShowWelcomeModal();
-</script>
+    /* ================================================== */
+    /* api calls */
+    /* ================================================== */
 
+    async function loadIntro() {
+      try {
+        const response = await fetch("/intro");
+        const data = await response.json();
+
+        introMessage.remove();
+        addMessage(data.intro, "sage", null, false);
+        addStarterQuestions();
+      } catch (error) {
+        introMessage.textContent = "Could not load Sage.";
+      }
+    }
+
+    async function sendMessage() {
+      const message = userInput.value.trim();
+      if (!message) return;
+
+      const selectedMode = document.querySelector('input[name="sage-mode"]:checked').value;
+
+      addMessage(message, "user");
+      userInput.value = "";
+      userInput.style.height = "auto";
+
+      const loadingWrapper = document.createElement("div");
+      loadingWrapper.className = "message-wrapper sage";
+
+      const loading = document.createElement("div");
+      loading.className = "message sage loading";
+      loading.innerHTML = `
+        <span class="loading-text">Sage is thinking</span>
+        <span class="loading-dots">
+          <span>.</span><span>.</span><span>.</span>
+        </span>
+      `;
+
+      loadingWrapper.appendChild(loading);
+      chat.appendChild(loadingWrapper);
+      chat.scrollTop = chat.scrollHeight;
+
+      console.log("sending settings:", {
+        mode: selectedMode,
+        use_local_news: localNewsToggle.checked,
+        selected_state: stateSelect.value,
+        selected_community: communitySelect.value
+      });
+
+      try {
+        const response = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message,
+            mode: selectedMode,
+            use_local_news: localNewsToggle.checked,
+            selected_state: stateSelect.value,
+            selected_community: communitySelect.value
+          })
+        });
+
+        const data = await response.json();
+        console.log("chat response:", data);
+
+        loadingWrapper.remove();
+
+        if (data.error) {
+          addMessage(data.error, "sage");
+          return;
+        }
+
+        const messageWrapper = addMessage(
+          data.answer,
+          "sage",
+          data.sources,
+          true,
+          data.followups || []
+        );
+
+        requestAnimationFrame(() => {
+          messageWrapper.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+
+      } catch {
+        loadingWrapper.remove();
+        addMessage("Something went wrong while contacting Sage.", "sage");
+      }
+    }
+
+    /* ================================================== */
+    /* welcome modal */
+    /* ================================================== */
+
+    howItWorksBtn.addEventListener("click", () => {
+      welcomeModal.classList.remove("hidden");
+    });
+
+    function maybeShowWelcomeModal() {
+      welcomeModal.classList.remove("hidden");
+    }
+
+    function closeWelcomeModal() {
+      welcomeModal.classList.add("hidden");
+      localStorage.setItem("sageWelcomeSeen", "true");
+    }
+
+    welcomeClose.addEventListener("click", closeWelcomeModal);
+    welcomeStart.addEventListener("click", closeWelcomeModal);
+
+    /* ================================================== */
+    /* app event listeners and startup */
+    /* ================================================== */
+
+    sendButton.addEventListener("click", sendMessage);
+
+    userInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    loadIntro();
+    maybeShowWelcomeModal();
+  </script>
 </body>
 </html>
