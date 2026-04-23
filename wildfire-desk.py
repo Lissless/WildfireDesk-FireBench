@@ -529,13 +529,13 @@ def get_followup_questions(user_message, answer):
 
 # function: chat_with_sage
 # runs main chat flow and combines rag, ivy results, citations, and followups
-def chat_with_sage(user_message, mode="grounded", use_local_news=False, selected_state=""):
+def chat_with_sage(user_message, mode="grounded", use_local_news=False, selected_state="", selected_community=""):
     use_rag = (mode == "grounded")
 
     web_results = []
     if use_local_news and selected_state:
         try:
-            web_results = search_web(user_message, selected_state, None)
+            web_results = search_web(user_message, selected_state, selected_community)
         except Exception as e:
             print("Web search error:", e)
 
