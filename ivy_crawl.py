@@ -7,6 +7,7 @@ import ast
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 from requests.exceptions import RequestException, Timeout
+import re
 
 ### ----------------------------------------------------------------------------------------------------
 ### System Settings
@@ -47,14 +48,13 @@ ivy_model = "gemini-2.5-flash-lite"
 ivy_html_system = (
     "You will receive the raw HTML of a webpage and user input in the format "
     "HTML:<HTML> UserInput:<usr>. Extract the key findings from the webpage "
-    "that are related to the user input. Respond briefly and clearly."
-)
+    "that are related to the user input. Respond briefly and clearly.")
 ivy_discern_system = "respond in the format: <Yes or No>|<reason why>"
 ivy_url_classify_system = """Respond ONLY with a single Python dictionary in this exact format:
-{1:True, 2:False, 3:True}
-Do not include explanation.
-Do not repeat the dictionary.
-Do not include any extra text."""
+    {1:True, 2:False, 3:True}
+    Do not include explanation.
+    Do not repeat the dictionary.
+    Do not include any extra text."""
 ivy_session_id = "ivy" + str(timestamp)
 ivy_temperature = 0.2
 
@@ -228,15 +228,15 @@ def search_web(usr, state, community):
             print("Final records length: ", len(news_records))
             print(f" Records: {news_records}")
 
-            with open(f"{news_resources}/{root_name}.jsonl", "w", encoding="utf-8") as crawl_file:
+            with open(get_outlet_cache_path(root_name), "w", encoding="utf-8") as crawl_file:
                 for r in news_records:
                     crawl_file.write(json.dumps(r) + "\n")
         else:
             print("This site already has crawled relevant data stored: ", root_name)
-            state_file = f"{news_resources}/{root_name}.jsonl"
+            state_file = get_outlet_cache_path(root_name)
             news_records = get_all_crawl_data(state_file)
 
-        filename = f"{news_resources}/{root_name}.jsonl"
+        filename = get_outlet_cache_path(root_name)
         summaries_text = get_summaries_list(filename)
         if summaries_text == "":
             print("Something went wrong with making the summary")
@@ -533,7 +533,7 @@ def extract_html_content(html_text):
 
 def get_root(root_name):
     try:
-        name = f"{news_resources}/{root_name}.jsonl"
+        name = get_outlet_cache_path(root_name)
         print("getting root of name: ", name)
         with open(name, "r", encoding="utf-8") as crawl_file:
             first_line = crawl_file.readline().strip()
@@ -549,7 +549,7 @@ def get_root(root_name):
 
 def get_crawl_record(url, root_name):
     try:
-        with open(f"{news_resources}/{root_name}.jsonl", "r", encoding="utf-8") as crawl_file:
+        with open(get_outlet_cache_path(root_name), "r", encoding="utf-8") as crawl_file:
             line = crawl_file.readline()
             while line:
                 record = json.loads(line)
@@ -566,25 +566,28 @@ def get_all_crawl_data(filename, community=None):
     try:
         with open(filename, "r", encoding="utf-8") as crawl_file:
             line = crawl_file.readline()
-            print("Trying to open:", filename)
 
             while line:
                 record = json.loads(line)
+
                 if community is not None:
-                    if record["Community"].count("-") == len(record["Community"]):
-                        print("General Conversion")
-                        record["Community"] = "General"
-                    if record["Community"] != community:
-                        print("Failed community check: ", record)
+                    record_community = normalize_community_name(record.get("Community"))
+                    target_community = normalize_community_name(community)
+
+                    if record_community != target_community:
                         line = crawl_file.readline()
                         continue
+
+                    record["Community"] = record_community
+
                 res.append(record)
                 line = crawl_file.readline()
+
     except Exception as e:
         print("get all crawl data bad exit:", e)
         return res
-    return res
 
+    return res
 
 def get_summaries_list(filename):
     summary_text = ""
@@ -625,6 +628,71 @@ def prompt_ivy(query_prompt, ivy_sys):
     )
     return response
 
+def normalize_community_name(raw_value):
+    if raw_value is None:
+        return "General"
+
+    value = str(raw_value).strip()
+
+    if not value:
+        return "General"
+
+    if value.count("-") == len(value):
+        return "General"
+
+    return value
+
+def get_state_to_communities_map():
+    state_map = {}
+
+    for (_, _, filenames) in walk(news_region_resources):
+        for file in filenames:
+            if not file.endswith(".jsonl"):
+                continue
+
+            state_name = file.replace("_", " ").replace(".jsonl", "")
+            state_file = f"{news_region_resources}/{file}"
+
+            communities = set()
+
+            with open(state_file, "r", encoding="utf-8") as infile:
+                for line in infile:
+                    record = json.loads(line)
+                    community = normalize_community_name(record.get("Community"))
+                    communities.add(community)
+
+            state_map[state_name] = sorted(communities)
+        break
+
+    return state_map
+
+def get_all_unique_communities():
+    all_communities = set()
+    state_map = get_state_to_communities_map()
+
+    for communities in state_map.values():
+        all_communities.update(communities)
+
+    return sorted(all_communities)
+
+def make_safe_filename(name):
+    if not name:
+        return "unknown_outlet"
+
+    safe = name.strip()
+    safe = safe.replace("&", "and")
+    safe = safe.replace("/", "_")
+    safe = safe.replace("\\", "_")
+    safe = re.sub(r"\s+", "_", safe)
+    safe = re.sub(r"[^A-Za-z0-9._-]", "", safe)
+    safe = re.sub(r"_+", "_", safe).strip("._-")
+
+    return safe or "unknown_outlet"
+
+
+def get_outlet_cache_path(outlet_name):
+    safe_name = make_safe_filename(outlet_name)
+    return f"{news_resources}/{safe_name}.jsonl"
 
 ### ----------------------------------------------------------------------------------------------------
 ### Logging Functions

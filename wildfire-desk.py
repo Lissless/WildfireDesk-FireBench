@@ -4,7 +4,7 @@ import datetime
 import sys
 from string import Template
 from pathlib import Path
-from ivy_crawl import search_web
+from ivy_crawl import search_web, get_state_to_communities_map
 
 ### ----------------------------------------------------------------------------------------------------
 ### System Settings
@@ -460,13 +460,18 @@ def get_followup_questions(user_message, answer):
     ]
 
 
-def chat_with_sage(user_message, mode="grounded", use_local_news=False, selected_state=""):
+def chat_with_sage(user_message, mode="grounded", use_local_news=False, selected_state="", selected_community=""):
     use_rag = (mode == "grounded")
 
     web_results = []
     if use_local_news and selected_state:
         try:
-            web_results = search_web(user_message, selected_state, None)
+            effective_community = selected_community.strip() if selected_community else None
+            if effective_community == "":
+                effective_community = None
+
+            web_results = search_web(user_message, selected_state, effective_community)
+
         except Exception as e:
             print("Web search error:", e)
             web_results = []

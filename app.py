@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, render_template
 import importlib.util
 import pathlib
+import json
 
 # load wildfire-desk.py
 module_path = pathlib.Path(__file__).parent / "wildfire-desk.py"
@@ -13,7 +14,12 @@ app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return render_template("index.html")
+    community_map = wildfire_desk.get_state_to_communities_map()
+    return render_template(
+        "index.html",
+        state_community_map=community_map,
+        state_community_map_json=json.dumps(community_map)
+    )
 
 
 @app.route("/intro", methods=["GET"])
@@ -30,6 +36,7 @@ def chat():
     mode = data.get("mode", "grounded").strip().lower()
     use_local_news = data.get("use_local_news", False)
     selected_state = data.get("selected_state", "").strip()
+    selected_community = data.get("selected_community", "").strip()
 
     if not user_message:
         return jsonify({"error": "Message is required"}), 400
@@ -37,7 +44,6 @@ def chat():
     if mode not in {"grounded", "general"}:
         mode = "grounded"
 
-    # make sure checkbox value is treated as a real boolean
     use_local_news = bool(use_local_news)
 
     print("APP.PY RECEIVED:")
@@ -45,12 +51,14 @@ def chat():
     print("mode:", mode)
     print("use_local_news:", use_local_news)
     print("selected_state:", selected_state)
+    print("selected_community:", selected_community)
 
     result = wildfire_desk.chat_with_sage(
         user_message,
         mode=mode,
         use_local_news=use_local_news,
-        selected_state=selected_state
+        selected_state=selected_state,
+        selected_community=selected_community
     )
 
     return jsonify(result)

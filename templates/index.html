@@ -18,12 +18,10 @@
     <!-- left sidebar with product info and privacy -->
     <aside class="sidebar">
 
-      <!-- product title and short description -->
       <div class="sidebar-brand">
         <h1>WildfireDesk</h1>
       </div>
 
-      <!-- concise mission statement -->
       <div class="sidebar-card">
         <h2>About Sage</h2>
         <p>
@@ -35,7 +33,6 @@
         </p>
       </div>
 
-      <!-- main ways sage can help -->
       <div class="sidebar-card">
         <h2>How Sage Can Help</h2>
 
@@ -57,7 +54,6 @@
         </div>
       </div>
 
-      <!-- privacy section -->
       <div class="sidebar-card">
         <h2>Privacy</h2>
         <p>
@@ -82,12 +78,9 @@
       </div>
     </aside>
 
-    <!-- sidebar collapse toggle -->
     <button id="sidebar-toggle" class="sidebar-toggle" type="button">‹</button>
 
-    <!-- main chat area -->
     <main class="app">
-
       <div class="header">
         <div class="chat-title-row">
           <div>
@@ -97,21 +90,17 @@
         </div>
       </div>
 
-      <!-- chat messages render here -->
       <div id="chat" class="chat-container">
         <div class="message sage loading" id="intro-message">Loading Sage...</div>
       </div>
 
-      <!-- input row for sending user messages -->
       <div class="input-area">
         <textarea id="user-input" rows="2" placeholder="Ask Sage a question..."></textarea>
         <button id="send-button">Send</button>
       </div>
     </main>
 
-    <!-- right sidebar for settings -->
     <aside class="settings-sidebar">
-
       <div class="how-it-works-card">
         <button id="how-it-works-btn" class="how-it-works-row" type="button">
           <span class="how-text">How Sage works</span>
@@ -169,17 +158,23 @@
           <label class="settings-label" for="state-select">State</label>
           <select id="state-select" class="settings-select">
             <option value="">Select a state</option>
-            <option value="California">California</option>
-            <option value="Massachusetts">Massachusetts</option>
-            <option value="New York">New York</option>
-            <option value="Texas">Texas</option>
-            <option value="Florida">Florida</option>
+            {% for state in state_community_map.keys()|sort %}
+              <option value="{{ state }}">{{ state }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="settings-divider"></div>
+
+        <div class="settings-section">
+          <label class="settings-label" for="community-select">Community</label>
+          <select id="community-select" class="settings-select">
+            <option value="">All communities</option>
           </select>
         </div>
       </div>
     </aside>
 
-    <!-- first-time welcome modal -->
     <div id="welcome-modal" class="welcome-modal hidden">
       <div class="welcome-card">
         <button id="welcome-close" class="welcome-close" type="button" aria-label="Close tutorial">
@@ -219,7 +214,6 @@
 
   </div>
 
-  <!-- markdown parser -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
 <script>
@@ -235,6 +229,8 @@
   const sidebarToggle = document.getElementById("sidebar-toggle");
   const localNewsToggle = document.getElementById("local-news-toggle");
   const stateSelect = document.getElementById("state-select");
+  const communitySelect = document.getElementById("community-select");
+  const stateCommunityMap = {{ state_community_map_json | safe }};
 
   const starterQuestions = [
     "How do I organize my neighbors after a wildfire?",
@@ -268,6 +264,34 @@
       button.innerHTML = 'See less <span class="arrow">▴</span>';
     }
   }
+
+  /**************************************************/
+  /* community dropdown */
+  /**************************************************/
+
+  function populateCommunityOptions(selectedState) {
+    communitySelect.innerHTML = "";
+
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = "All communities";
+    communitySelect.appendChild(defaultOption);
+
+    if (!selectedState || !stateCommunityMap[selectedState]) {
+      return;
+    }
+
+    stateCommunityMap[selectedState].forEach((community) => {
+      const option = document.createElement("option");
+      option.value = community;
+      option.textContent = community;
+      communitySelect.appendChild(option);
+    });
+  }
+
+  stateSelect.addEventListener("change", () => {
+    populateCommunityOptions(stateSelect.value);
+  });
 
   /**************************************************/
   /* download and editing helpers */
@@ -547,7 +571,6 @@
       wrapper.appendChild(citationsArea);
     }
 
-    // add follow-up suggestions under sage replies
     if (sender === "sage" && followups.length > 0) {
       addFollowupQuestions(wrapper, followups);
     }
@@ -681,7 +704,8 @@
     console.log("sending settings:", {
       mode: selectedMode,
       use_local_news: localNewsToggle.checked,
-      selected_state: stateSelect.value
+      selected_state: stateSelect.value,
+      selected_community: communitySelect.value
     });
 
     try {
@@ -692,7 +716,8 @@
           message,
           mode: selectedMode,
           use_local_news: localNewsToggle.checked,
-          selected_state: stateSelect.value
+          selected_state: stateSelect.value,
+          selected_community: communitySelect.value
         })
       });
 
