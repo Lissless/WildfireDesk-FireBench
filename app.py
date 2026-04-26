@@ -2,12 +2,14 @@ from flask import Flask, request, jsonify, render_template
 import importlib.util
 import pathlib
 import json
+from wildfire_desk import Sage
 
 # load wildfire-desk.py
-module_path = pathlib.Path(__file__).parent / "wildfire-desk.py"
+module_path = pathlib.Path(__file__).parent / "wildfire_desk.py"
 spec = importlib.util.spec_from_file_location("wildfire_desk", module_path)
 wildfire_desk = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(wildfire_desk)
+sage = Sage()
 
 app = Flask(__name__)
 
@@ -24,7 +26,7 @@ def home():
 
 @app.route("/intro", methods=["GET"])
 def intro():
-    intro_text = wildfire_desk.get_intro()
+    intro_text = sage.get_intro()
     return jsonify({"intro": intro_text})
 
 
@@ -53,7 +55,7 @@ def chat():
     print("selected_state:", selected_state)
     print("selected_community:", selected_community)
 
-    result = wildfire_desk.chat_with_sage(
+    result = sage.chat_with_bot(
         user_message,
         mode=mode,
         use_local_news=use_local_news,
@@ -65,7 +67,7 @@ def chat():
 
 
 if __name__ == "__main__":
-    if not wildfire_desk.setup_sage():
+    if not sage.setup_sage(False):
         raise RuntimeError("Failed to set up Sage")
 
     app.run(host="127.0.0.1", port=5000, debug=True, use_reloader=False)
