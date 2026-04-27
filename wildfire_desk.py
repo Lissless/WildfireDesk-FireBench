@@ -101,7 +101,7 @@ class Sage(CivicChatbot):
         if should_generate:
             followups = self.get_followup_questions(user_message, answer)
 
-        return {
+        return answer, {
             "answer": answer,
             "sources": sources,
             "followups": followups,
@@ -608,7 +608,7 @@ class Sage(CivicChatbot):
 
     # function: log_bot
     # writes sage's response to the log and can print rag debug info
-    def log_bot(self, file, response, rag_context, verbose=verbose, display_rag=display_rag):
+    def log_bot(self, file, response, rag_context="", verbose=verbose, display_rag=display_rag):
         phrase = ""
 
         if isinstance(response, dict):
@@ -657,20 +657,20 @@ def run_cli():
 
     with open(f"log-{sage.get_timestamp()}.txt", "w", encoding="utf-8") as file:
         intro = sage.get_intro()
-        sage.log_bot(file, intro, "")
+        sage.log_bot(file, intro)
 
         usr = input("Type your response here: ")
 
         while usr != "quit":
             sage.log_user(file, usr)
 
-            result = sage.chat_with_bot(usr, mode="grounded")
+            answer, result = sage.chat_with_bot(usr, mode="grounded")
 
-            sage.log_bot(file, result["answer"], result.get("rag_context", []))
+            sage.log_bot(file, answer, result.get("rag_context", []))
 
             if result["sources"]:
                 print("\nCitation Summary:\n")
-                sage.log_bot(file, result["sources"], "")
+                sage.log_bot(file, result["sources"])
             else:
                 print("WARNING: No vetted resources were used to produce the information above")
 
