@@ -132,15 +132,15 @@
                 i
               </button>
               <div class="tooltip-box">
-                Grounded in resources uses expert materials for more specific answers.
-                For a more general approach, switch to General.
+                Expert-informed mode uses curated expert resources to provide more specific, evidence-based guidance.
+                  For a more general approach without those materials, use General.
               </div>
             </div>
           </div>
 
           <label class="mode-option">
             <input type="radio" name="sage-mode" value="grounded" checked>
-            Grounded in resources
+            Expert-informed
           </label>
 
           <label class="mode-option">
@@ -159,9 +159,9 @@
                   i
                 </button>
                 <div class="tooltip-box">
-                  Grounded in resources uses expert materials for more specific answers.
-                  For a more general approach, switch to General.
-              </div>
+                  Local news mode uses recent local reporting to make answers more relevant to your selected state or community.
+                  For a more general answer without location-specific context, turn it off.              
+                </div>
             </div>
           </div>
 
@@ -196,47 +196,105 @@
       </div>
     </aside>
 
-    <!-- ================================================== -->
-    <!-- welcome modal -->
-    <!-- ================================================== -->
-    <div id="welcome-modal" class="welcome-modal hidden">
-      <div class="welcome-card">
-        <button id="welcome-close" class="welcome-close" type="button" aria-label="Close tutorial">
-          ×
-        </button>
+<!-- ================================================== -->
+<!-- welcome modal -->
+<!-- ================================================== -->
+  <div id="welcome-modal" class="welcome-modal hidden">
+    <div class="welcome-card">
+      <button id="welcome-close" class="welcome-close" type="button">×</button>
+
+      <!-- ================= SLIDE 1 ================= -->
+      <div class="welcome-slide active">
+        <div class="welcome-progress">
+          <span class="dot active"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+        </div>
 
         <h2>Welcome to Sage</h2>
 
-        <p>
-          Sage is here to help with wildfire recovery and community action. You can use it to think through next steps, compare options, and create practical materials like emails, plans, or meeting agendas.
+        <p class="welcome-lead">
+          Sage helps you think through wildfire recovery, rebuilding, insurance, housing, and community action.
         </p>
 
-        <div class="welcome-section">
+        <div class="welcome-soft-box">
           <h3>How to use Sage</h3>
-          <ul>
-            <li>Ask a question about recovery, organizing, housing, insurance, or rebuilding.</li>
-            <li>Sage will usually ask a few follow-up questions first so it can tailor the response.</li>
-            <li>Use Grounded in resources for answers based on expert materials and source citations.</li>
-            <li>Use General for a broader response that does not rely on the uploaded documents.</li>
-          </ul>
+          <ol>
+            <li>Start with a suggested question, or type something on your mind.</li>
+            <li>Answer any follow-up questions so Sage understands your situation.</li>
+            <li>Use the response to plan next steps, compare options, or draft materials.</li>
+          </ol>
         </div>
 
-        <div class="welcome-section">
-          <h3>Try asking</h3>
-          <ul>
-            <li>How do I organize my neighbors to rebuild safely?</li>
-            <li>What should I do if my insurance claim is delayed?</li>
-            <li>Help me draft an outreach message for a community meeting.</li>
-          </ul>
+        <div class="welcome-example">
+          Try: “Help me draft an outreach message for a community meeting.”
         </div>
-
-        <button id="welcome-start" class="welcome-start" type="button">
-          Got it
-        </button>
       </div>
-    </div>
 
+      <!-- ================= SLIDE 2 ================= -->
+      <div class="welcome-slide">
+        <div class="welcome-progress">
+          <span class="dot"></span>
+          <span class="dot active"></span>
+          <span class="dot"></span>
+        </div>
+
+        <h2>Response mode</h2>
+
+        <p class="welcome-lead">
+          Response mode controls what kind of information Sage uses when answering.
+        </p>
+
+        <img src="{{ url_for('static', filename='response-mode.png') }}"
+            alt="Response mode setting"
+            class="welcome-image">
+
+        <div class="welcome-soft-box">
+          <h3>How to choose</h3>
+          <ul>
+            <li><strong>Expert-informed:</strong> uses curated research and expert resources to provide more grounded, evidence-based guidance.</li>
+            <li><strong>General response:</strong> generates flexible, general-purpose answers that are useful for brainstorming, drafting, or exploring ideas.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ================= SLIDE 3 ================= -->
+      <div class="welcome-slide">
+        <div class="welcome-progress">
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span class="dot active"></span>
+        </div>
+
+        <h2>Local news context</h2>
+
+        <p class="welcome-lead">
+          Local news helps Sage tailor answers to what’s happening in your area.
+        </p>
+
+        <img src="{{ url_for('static', filename='local-news.png') }}"
+            alt="Local news setting"
+            class="welcome-image">
+
+        <div class="welcome-soft-box">
+          <h3>How to use it</h3>
+          <ol>
+            <li>Turn on “Include local news context.”</li>
+            <li>Select a state.</li>
+            <li>Choose a community, or leave it as “All communities.”</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ================= CONTROLS ================= -->
+      <div class="welcome-controls">
+        <button id="welcome-back" class="welcome-secondary">Back</button>
+        <button id="welcome-next" class="welcome-start">Next</button>
+      </div>
+
+    </div>
   </div>
+</div>
 
   <!-- external script -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -259,7 +317,6 @@
 
     const welcomeModal = document.getElementById("welcome-modal");
     const welcomeClose = document.getElementById("welcome-close");
-    const welcomeStart = document.getElementById("welcome-start");
     const howItWorksBtn = document.getElementById("how-it-works-btn");
 
     const starterQuestions = [
@@ -716,8 +773,14 @@
 
       const loading = document.createElement("div");
       loading.className = "message sage loading";
+
+      // change message if local news is on
+      const loadingText = localNewsToggle.checked
+        ? "Sage is searching local news (this may take a moment)"
+        : "Sage is thinking";
+
       loading.innerHTML = `
-        <span class="loading-text">Sage is thinking</span>
+        <span class="loading-text">${loadingText}</span>
         <span class="loading-dots">
           <span>.</span><span>.</span><span>.</span>
         </span>
@@ -776,14 +839,27 @@
     }
 
     /* ================================================== */
-    /* welcome modal */
+    /* welcome modal (multi-slide) */
     /* ================================================== */
 
-    howItWorksBtn.addEventListener("click", () => {
-      welcomeModal.classList.remove("hidden");
-    });
+    const welcomeSlides = document.querySelectorAll(".welcome-slide");
+    const welcomeBack = document.getElementById("welcome-back");
+    const welcomeNext = document.getElementById("welcome-next");
+
+    let welcomeSlideIndex = 0;
+
+    function showSlide(index) {
+      welcomeSlides.forEach((slide, i) => {
+        slide.classList.toggle("active", i === index);
+      });
+
+      welcomeBack.style.visibility = index === 0 ? "hidden" : "visible";
+      welcomeNext.textContent = index === welcomeSlides.length - 1 ? "Got it" : "Next";
+    }
 
     function maybeShowWelcomeModal() {
+      welcomeSlideIndex = 0;
+      showSlide(welcomeSlideIndex);
       welcomeModal.classList.remove("hidden");
     }
 
@@ -792,9 +868,29 @@
       localStorage.setItem("sageWelcomeSeen", "true");
     }
 
-    welcomeClose.addEventListener("click", closeWelcomeModal);
-    welcomeStart.addEventListener("click", closeWelcomeModal);
+    howItWorksBtn.addEventListener("click", () => {
+      welcomeSlideIndex = 0;
+      showSlide(welcomeSlideIndex);
+      welcomeModal.classList.remove("hidden");
+    });
 
+    welcomeClose.addEventListener("click", closeWelcomeModal);
+
+    welcomeNext.addEventListener("click", () => {
+      if (welcomeSlideIndex < welcomeSlides.length - 1) {
+        welcomeSlideIndex++;
+        showSlide(welcomeSlideIndex);
+      } else {
+        closeWelcomeModal();
+      }
+    });
+
+    welcomeBack.addEventListener("click", () => {
+      if (welcomeSlideIndex > 0) {
+        welcomeSlideIndex--;
+        showSlide(welcomeSlideIndex);
+      }
+    });
     /* ================================================== */
     /* app event listeners and startup */
     /* ================================================== */
