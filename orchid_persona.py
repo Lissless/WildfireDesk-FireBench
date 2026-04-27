@@ -27,6 +27,10 @@ class BenchEvaluatorOrchid():
     orchid_session_id = "orchid_" + str(timestamp)
     orchid_sys_filepath = "orchid-resources/orchid-tone.txt"
 
+    exit_eval_session_id = "orchid_early_exit_"+ str(timestamp)
+    exit_eval_sys = ""
+    exit_eval_filepath = "orchid-resources/exit-evaluator-tone.txt"
+
 
     def __init__(self, civic_bot:CivicChatbot):
         self.civic_bot = civic_bot
@@ -48,6 +52,17 @@ class BenchEvaluatorOrchid():
             lastk=5
         )
         return response
+    
+    def prompt_early_exit(self, query_prompt):
+        response = self.orchid.generate(
+            model=self.orchid_model,
+            system=self.exit_eval_sys,
+            query=query_prompt,
+            temperature=0,
+            session_id=self.exit_eval_session_id,
+            lastk=0
+        )
+        return response
 
     # function: extract_response_string
     # pulls the text result out of orchid's response format
@@ -64,6 +79,7 @@ class BenchEvaluatorOrchid():
         global orchid_sys
         try:
             self.orchid_sys = self.load_text_file(self.orchid_sys_filepath)
+            self.exit_eval_sys = self.load_text_file(self.exit_eval_filepath)
         except:
             return False
         return True
@@ -77,15 +93,6 @@ class BenchEvaluatorOrchid():
         phrase = f"Orchid: {self.extract_response_string(response)}\n"
         file.write(phrase)
         
-        if verbose:
-            print(phrase)
-
-    # function: log_user
-    # writes the user's message to the log and prints it if verbose
-    def log_user(self, file, text, verbose=verbose):
-        phrase = "Civic Bot: " + text + "\n\n"
-        file.write(phrase)
-
         if verbose:
             print(phrase)
 
@@ -112,7 +119,26 @@ class BenchEvaluatorOrchid():
             return bot_res
         else:
             return "Bad return - Cannot interpret"
+    
+    def determine_early_exit(self, file, initial_qu, bot_responses):
+        # format all the evaluation prompt
+        bot_str = ""
+        for resp in bot_responses:
+            bot_str = bot_str + resp + "\n"
+        exit_prompt = f"QUESTION : {initial_qu}\nRESPONSES : {bot_str}"
+        early_exit_resp = self.prompt_early_exit(exit_prompt)
+        determination = self.extract_response_string(early_exit_resp)
+        early_det = "\nEarly Exit Determination: " + determination + "\n"
 
+        file.write(early_det)
+        print(early_det)
+
+        juegement = determination.split("|")[0]
+        try:
+            return int(juegement) == 1
+        except:    
+            return 0
+        
     def eval_convo(self, file, initial_qu, timeout_turns=5):
         initial_sys_inclusion = f"""\n\n**First Message Requirement (MANDATORY)**
         On your very first message only, you MUST begin with the exact phrase:
@@ -122,7 +148,6 @@ class BenchEvaluatorOrchid():
         * This phrase must appear at the very start of the message
         * Do not modify or paraphrase it
         * Mandatory: Say only this phrase and nothing else"""
-        # initial_sys_inclusion =f"You must ask the exact question: {initial_qu}"
         initial_sys = self.orchid_sys + initial_sys_inclusion
         bot_res = ""
         orchid_responses = []
@@ -141,6 +166,9 @@ class BenchEvaluatorOrchid():
             self.civic_bot.log_bot(file, bot_res)
             orchid_responses.append(orchid_res_str)
             civbot_responses.append(bot_res)
+
+            if self.determine_early_exit(file, initial_qu, civbot_responses):
+                break
         
         # Add a question asking if the question was answered
 
@@ -171,7 +199,7 @@ def main():
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         with open(f"log-orchid-{timestamp}.txt", "w", encoding="utf-8") as file:
             file.write(f"Key Question: {usr}\n\n")
-            orchid.eval_convo(file, usr)
+            orchid_resp, civbot_resp = orchid.eval_convo(file, usr)
             orchid.refresh_orchid()
             usr = input("What is the initial prompt for Orchid?: ")
 
