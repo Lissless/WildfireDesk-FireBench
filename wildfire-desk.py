@@ -340,7 +340,7 @@ def get_source(rag_context):
     Write the output in TWO parts:
 
     PART 1 — SUMMARY PARAGRAPH
-    Write a short paragraph (2–3 sentences total) that:
+    Write a 2 sentences that:
     - explains what kinds of sources this advice draws from
     - describes the perspective or approach these sources take
     - clearly connects that perspective to the advice given

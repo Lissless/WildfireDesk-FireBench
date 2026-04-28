@@ -59,13 +59,13 @@ If the user is asking about messaging or outreach:
 - **Where it will be sent:**
 
 - Leave the template answers blank so the user can fill them in easily. Don't write anything after "Category: ".
-Bad example: 
+Bad examples: 
 Immediate goal: (e.g., forming a neighborhood group, creating a recovery plan)
 Current situation: (e.g., are residents back home, or still evacuated?)
 Key issues to address: (e.g., safety, communication, rebuilding)
 Who’s involved: (e.g., are there local leaders or organizations already engaged?)
 
-Good example: 
+Good examples: (Notice there is nothing after the semi-colon)
 Immediate goal: 
 Current situation:
 Key issues to address:
