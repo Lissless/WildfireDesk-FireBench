@@ -1,0 +1,56 @@
+[
+  {
+    "_id": "001",
+    "conversation": {
+      "prompts": ["prompt 1","prompt 2"],
+      "responses": ["response to prompt 1", "response to prompt 2"]
+    },
+    "difficulty":"Easy",
+    "high_class": "Civic & Political Knowledge",
+    "sub_class": "Roles and authority in local government",
+    "Expert_grade": {
+      "Factual and Procedural Accuracy": "",
+      "Actionability": "",
+      "Contextual Relevance": "",
+      "Completeness": "",
+      "Clarity & Usability": "",
+      "Civic Responsibility": ""
+    }
+  },
+  {
+    "_id": "002",
+    "conversation": {
+      "prompts": ["prompt 1","prompt 2"],
+      "responses": ["response to prompt 1", "response to prompt 2"]
+    },
+    "difficulty":"Medium",
+    "high_class": "Civic & Political Knowledge",
+    "sub_class": "Roles and authority in local government",
+    "Expert_grade": {
+      "Factual and Procedural Accuracy": "",
+      "Actionability": "",
+      "Contextual Relevance": "",
+      "Completeness": "",
+      "Clarity & Usability": "",
+      "Civic Responsibility": ""
+    }
+  },
+  {
+    "_id": "003",
+    "conversation": {
+      "prompts": ["prompt 1","prompt 2"],
+      "responses": ["response to prompt 1", "response to prompt 2"]
+    },
+    "difficulty":"Hard",
+    "high_class": "Civic & Political Knowledge",
+    "sub_class": "Roles and authority in local government",
+    "Expert_grade": {
+      "Factual and Procedural Accuracy": "",
+      "Actionability": "",
+      "Contextual Relevance": "",
+      "Completeness": "",
+      "Clarity & Usability": "",
+      "Civic Responsibility": ""
+    }
+  }
+]

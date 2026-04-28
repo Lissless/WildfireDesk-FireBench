@@ -21,8 +21,9 @@ SUMMARIZE = 0
 SEARCH = 1
 verbose = True
 crawl_time = ""
-news_resources = "sage-resources/web-crawl-data"
-news_region_resources = "sage-resources/state-local-news-outlets"
+news_resources = "ivy-resources/web-crawl-data"
+news_region_resources = "ivy-resources/state-local-news-outlets"
+news_summaries = "ivy-resources/state-local-news-summaries"
 selected_state = "California"
 selected_community = "Bay Area"
 conduct_internet_search = True
@@ -364,59 +365,6 @@ def redo_crawl_check(record, current_time_str):
     diff = current_time - record_time
 
     return diff.days >= timestamp_stale_allowance
-
-
-# function: add_summary
-# adds outlet summaries to the summary file for a state
-def add_summary(state, move_ahead=0):
-    input_file = f"sage-resources/state-local-news-outlets/{state}.jsonl"
-    output_file = f"sage-resources/state-local-news-summaries/{state}.jsonl"
-    retry = 2
-    failed = []
-
-    with open(input_file, "r", encoding="utf-8") as infile, open(output_file, "a", encoding="utf-8") as outfile:
-        skip = 0
-
-        for line in infile:
-            if skip != move_ahead:
-                skip += 1
-                print("Skip: ", skip)
-                continue
-
-            record = json.loads(line)
-            url = record.get("Website", "")
-            local_retry = retry
-            success = False
-
-            if "http" in url:
-                while local_retry != 0:
-                    page = safe_get(url)
-                    if page is None:
-                        local_retry -= 1
-                        print("Retry: ", local_retry)
-                        continue
-
-                    try:
-                        html_content = extract_html_content(page.text)
-                        ivy_prompt = (
-                            f"HTML:{html_content} UserInput: Summarize the content of this webpage in 4 sentences. "
-                            "Mention the main topic, key words and any social groups of people it mentions."
-                        )
-                        resp = prompt_ivy(ivy_prompt, ivy_html_system)
-                        record["Summary"] = extract_response_string(resp)
-                        print(record)
-                        outfile.write(json.dumps(record) + "\n")
-                        success = True
-                        break
-                    except Exception as e:
-                        local_retry -= 1
-                        print("Summary generation failed:", e)
-                        print("Retry: ", local_retry)
-
-                if not success:
-                    failed.append(record)
-
-    print("All failed records: \n", failed)
 
 ### ----------------------------------------------------------------------------------------------------
 ### HTML and URL Parsing Functions
