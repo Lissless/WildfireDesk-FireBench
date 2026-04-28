@@ -810,8 +810,11 @@
           })
         });
 
-        const data = await response.json();
-        console.log("chat response:", data);
+        const rawData = await response.json();
+        console.log("chat response:", rawData);
+
+        const answerText = rawData[0];
+        const data = rawData[1];
 
         loadingWrapper.remove();
 
