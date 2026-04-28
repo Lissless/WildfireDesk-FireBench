@@ -1,18 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- page metadata -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WildfireDesk</title>
-
-  <!-- external stylesheet -->
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-
-  <!-- font import -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
-
 <body>
   <div class="app-shell">
 
@@ -97,9 +91,9 @@
         </div>
       </div>
 
-      <div id="chat" class="chat-container">
-        <div class="message sage loading" id="intro-message">Loading Sage...</div>
-      </div>
+    <div id="chat" class="chat-container">
+      <div class="message sage loading" id="intro-message">Loading Sage...</div>
+    </div>
 
       <div class="input-area">
         <textarea id="user-input" rows="2" placeholder="Ask Sage a question..."></textarea>
@@ -296,14 +290,8 @@
   </div>
 </div>
 
-  <!-- external script -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
   <script>
-    /* ================================================== */
-    /* dom references and startup data */
-    /* ================================================== */
-
     const chat = document.getElementById("chat");
     const userInput = document.getElementById("user-input");
     const sendButton = document.getElementById("send-button");
@@ -611,146 +599,30 @@
 
       wrapper.appendChild(bubble);
 
-      if (sources) {
-        const citationsArea = document.createElement("div");
-        citationsArea.className = "citations-area";
+    if (sources) {
+        const sourcesDiv = document.createElement("div");
+        sourcesDiv.className = "sources";
 
-        const sourcesToggle = document.createElement("button");
-        sourcesToggle.className = "sources-toggle";
-        sourcesToggle.type = "button";
-        sourcesToggle.innerHTML = 'Where did this information come from? <span class="sources-arrow">▾</span>';
+        if (typeof sources === "string") {
+        sourcesDiv.innerHTML = marked.parse(sources);
 
-        sourcesDiv = document.createElement("div");
-        sourcesDiv.className = "sources collapsible-sources";
-        sourcesDiv.innerHTML = formatSources(sources);
+        } else {
+        sourcesDiv.textContent = JSON.stringify(sources, null, 2);
+        }
 
-        sourcesToggle.addEventListener("click", () => {
-          const isOpen = sourcesDiv.classList.contains("open");
-          const arrow = sourcesToggle.querySelector(".sources-arrow");
-
-          if (isOpen) {
-            sourcesDiv.classList.remove("open");
-            arrow.textContent = "▾";
-          } else {
-            sourcesDiv.classList.add("open");
-            arrow.textContent = "▴";
-
-            requestAnimationFrame(() => {
-              sourcesDiv.scrollIntoView({ behavior: "smooth", block: "end" });
-            });
-          }
-        });
-
-        citationsArea.appendChild(sourcesToggle);
-        citationsArea.appendChild(sourcesDiv);
-        wrapper.appendChild(citationsArea);
-      }
-
-      if (sender === "sage" && followups.length > 0) {
-        addFollowupQuestions(wrapper, followups);
-      }
-
-      chat.appendChild(wrapper);
-
-      if (sender !== "sage") {
-        chat.scrollTop = chat.scrollHeight;
-      }
-
-      return wrapper;
+        wrapper.appendChild(sourcesDiv);
     }
 
-    /* ================================================== */
-    /* starter and follow-up question buttons */
-    /* ================================================== */
-
-    function addStarterQuestions() {
-      const wrapper = document.createElement("div");
-      wrapper.className = "starter-questions";
-      wrapper.id = "starter-questions";
-
-      const label = document.createElement("div");
-      label.className = "starter-label";
-      label.textContent = "You can start by asking:";
-      wrapper.appendChild(label);
-
-      starterQuestions.forEach((question) => {
-        const button = document.createElement("button");
-        button.className = "starter-question-button";
-        button.type = "button";
-        button.textContent = question;
-
-        button.addEventListener("click", () => {
-          userInput.value = question;
-
-          const starterBlock = document.getElementById("starter-questions");
-          if (starterBlock) {
-            starterBlock.remove();
-          }
-
-          sendMessage();
-        });
-
-        wrapper.appendChild(button);
-      });
-
-      chat.appendChild(wrapper);
+    chat.appendChild(wrapper);
+    chat.scrollTop = chat.scrollHeight;
     }
-
-    function addFollowupQuestions(parentWrapper, questions) {
-      if (!questions || questions.length === 0) return;
-
-      const wrapper = document.createElement("div");
-      wrapper.className = "starter-questions followup-questions";
-
-      const label = document.createElement("div");
-      label.className = "starter-label";
-      label.textContent = "You might be thinking...";
-      wrapper.appendChild(label);
-
-      questions.slice(0, 2).forEach((question) => {
-        const button = document.createElement("button");
-        button.className = "starter-question-button";
-        button.type = "button";
-        button.textContent = question;
-
-        button.addEventListener("click", () => {
-          userInput.value = question;
-          userInput.style.height = "auto";
-          userInput.style.height = userInput.scrollHeight + "px";
-
-          wrapper.remove();
-
-          sendMessage();
-        });
-
-        wrapper.appendChild(button);
-      });
-
-      parentWrapper.appendChild(wrapper);
-    }
-
-    function clearSuggestedQuestions() {
-      const starterBlock = document.getElementById("starter-questions");
-      if (starterBlock) {
-        starterBlock.remove();
-      }
-
-      const followupBlocks = document.querySelectorAll(".followup-questions");
-      followupBlocks.forEach((block) => block.remove());
-    }
-
-    /* ================================================== */
-    /* api calls */
-    /* ================================================== */
 
     async function loadIntro() {
       try {
         const response = await fetch("/intro");
         const data = await response.json();
-
         introMessage.remove();
-        addMessage(data.intro, "sage", null, false);
-        addStarterQuestions();
+        addMessage(data.intro, "sage");
       } catch (error) {
         introMessage.textContent = "Could not load Sage.";
       }
@@ -760,16 +632,8 @@
       const message = userInput.value.trim();
       if (!message) return;
 
-      clearSuggestedQuestions();
-
-      const selectedMode = document.querySelector('input[name="sage-mode"]:checked').value;
-
       addMessage(message, "user");
       userInput.value = "";
-      userInput.style.height = "auto";
-
-      const loadingWrapper = document.createElement("div");
-      loadingWrapper.className = "message-wrapper sage";
 
       const loading = document.createElement("div");
       loading.className = "message sage loading";
@@ -790,50 +654,26 @@
       chat.appendChild(loadingWrapper);
       chat.scrollTop = chat.scrollHeight;
 
-      console.log("sending settings:", {
-        mode: selectedMode,
-        use_local_news: localNewsToggle.checked,
-        selected_state: stateSelect.value,
-        selected_community: communitySelect.value
-      });
-
       try {
         const response = await fetch("/chat", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message,
-            mode: selectedMode,
-            use_local_news: localNewsToggle.checked,
-            selected_state: stateSelect.value,
-            selected_community: communitySelect.value
-          })
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ message })
         });
 
         const data = await response.json();
-        console.log("chat response:", data);
-
-        loadingWrapper.remove();
+        loading.remove();
 
         if (data.error) {
           addMessage(data.error, "sage");
           return;
         }
 
-        const messageWrapper = addMessage(
-          data.answer,
-          "sage",
-          data.sources,
-          true,
-          data.followups || []
-        );
-
-        requestAnimationFrame(() => {
-          messageWrapper.scrollIntoView({ behavior: "smooth", block: "start" });
-        });
-
-      } catch {
-        loadingWrapper.remove();
+        addMessage(data.answer, "sage", data.sources);
+      } catch (error) {
+        loading.remove();
         addMessage("Something went wrong while contacting Sage.", "sage");
       }
     }
@@ -908,16 +748,13 @@
 
     sendButton.addEventListener("click", sendMessage);
 
-    userInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
+    userInput.addEventListener("keypress", function(event) {
+      if (event.key === "Enter") {
         sendMessage();
       }
     });
 
     loadIntro();
-    maybeShowWelcomeModal();
-    toggleLocalNewsOptions();
   </script>
 </body>
 </html>
