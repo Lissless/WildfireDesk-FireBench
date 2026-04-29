@@ -321,7 +321,7 @@ class Sage(CivicChatbot):
 
     # function: prompt_sage
     # sends a query to sage and optionally includes rag and web context
-    def prompt_sage(self, query_prompt, include_rag=True, web_context=""):
+    def prompt_sage(self, query_prompt, include_rag=True, web_context="",):
         final_query = ""
         rag_context = []
 
