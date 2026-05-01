@@ -10,7 +10,7 @@ from collections import defaultdict
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from wildfire_desk import prompt_sage
+from wildfire_desk import Sage
 
 agent = LLMProxy()
 base_dir = os.path.dirname(__file__)
@@ -24,8 +24,7 @@ timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 ### ----------------------
 ### Sage Settings
 ### ----------------------
-
-sage = LLMProxy()
+sage = Sage()
 sage_core = ""
 sage_temperature = 0.6
 sage_session_id = "sage" + str(timestamp)
@@ -56,7 +55,8 @@ def query_llm(query_prompt, args):
 	while tries < 5:
 		tries += 1
 		try:
-			response_dict, rag_context = prompt_sage(query_prompt, args.rag, args.model)
+			sage.sage_model = args.model
+			response_dict, rag_context = sage.prompt_sage(query_prompt, args.rag)
 			return response_dict, rag_context
 		except KeyboardInterrupt as e:
 			raise e
