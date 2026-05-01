@@ -315,9 +315,6 @@
     const stateSelect = document.getElementById("state-select");
     const communitySelect = document.getElementById("community-select");
     const stateCommunityMap = {{ state_community_map_json | safe }};
-
-    const welcomeModal = document.getElementById("welcome-modal");
-    const welcomeClose = document.getElementById("welcome-close");
     const howItWorksBtn = document.getElementById("how-it-works-btn");
 
     const starterQuestions = [
@@ -759,9 +756,9 @@
     }
 
     // send the user's message to the backend and show sage's response
-  async function sendMessage() {
-    const message = userInput.value.trim();
-    if (!message) return;
+    async function sendMessage() {
+      const message = userInput.value.trim();
+      if (!message) return;
 
       clearSuggestedQuestions();
 
@@ -777,7 +774,6 @@
       const loading = document.createElement("div");
       loading.className = "message sage loading";
 
-      // change message if local news is on
       const loadingText = localNewsToggle.checked
         ? "Sage is searching local news (this may take a moment)"
         : "Sage is thinking";
@@ -792,13 +788,6 @@
       loadingWrapper.appendChild(loading);
       chat.appendChild(loadingWrapper);
       chat.scrollTop = chat.scrollHeight;
-
-      console.log("sending settings:", {
-        mode: selectedMode,
-        use_local_news: localNewsToggle.checked,
-        selected_state: stateSelect.value,
-        selected_community: communitySelect.value
-      });
 
       try {
         const response = await fetch("/chat", {
@@ -816,14 +805,14 @@
         const rawData = await response.json();
         console.log("chat response:", rawData);
 
-        const answerText = rawData[0];
         const data = rawData[1];
 
         loadingWrapper.remove();
 
-    loadingWrapper.appendChild(loading);
-    chat.appendChild(loadingWrapper);
-    chat.scrollTop = chat.scrollHeight;
+        if (data.error) {
+          addMessage(data.error, "sage");
+          return;
+        }
 
         const messageWrapper = addMessage(
           data.answer,
@@ -837,18 +826,12 @@
           messageWrapper.scrollIntoView({ behavior: "smooth", block: "start" });
         });
 
-      } catch {
+      } catch (error) {
+        console.error("chat failed:", error);
         loadingWrapper.remove();
         addMessage("Something went wrong while contacting Sage.", "sage");
       }
-
-      addMessage(data.answer, "sage", data.sources, true);
-
-    } catch {
-      loadingWrapper.remove();
-      addMessage("Something went wrong while contacting Sage.", "sage");
     }
-  }
 
   /**************************************************/
   /* welcome modal */
