@@ -293,6 +293,7 @@
       </div>
 
     </div>
+
   </div>
 </div>
 
@@ -752,13 +753,15 @@
         addMessage(data.intro, "sage", null, false);
         addStarterQuestions();
       } catch (error) {
+        console.error("intro failed:", error);
         introMessage.textContent = "Could not load Sage.";
       }
     }
 
-    async function sendMessage() {
-      const message = userInput.value.trim();
-      if (!message) return;
+    // send the user's message to the backend and show sage's response
+  async function sendMessage() {
+    const message = userInput.value.trim();
+    if (!message) return;
 
       clearSuggestedQuestions();
 
@@ -818,10 +821,9 @@
 
         loadingWrapper.remove();
 
-        if (data.error) {
-          addMessage(data.error, "sage");
-          return;
-        }
+    loadingWrapper.appendChild(loading);
+    chat.appendChild(loadingWrapper);
+    chat.scrollTop = chat.scrollHeight;
 
         const messageWrapper = addMessage(
           data.answer,
@@ -839,7 +841,33 @@
         loadingWrapper.remove();
         addMessage("Something went wrong while contacting Sage.", "sage");
       }
+
+      addMessage(data.answer, "sage", data.sources, true);
+
+    } catch {
+      loadingWrapper.remove();
+      addMessage("Something went wrong while contacting Sage.", "sage");
     }
+  }
+
+  /**************************************************/
+  /* welcome modal */
+  /**************************************************/
+
+  const welcomeModal = document.getElementById("welcome-modal");
+  const welcomeClose = document.getElementById("welcome-close");
+  const welcomeStart = document.getElementById("welcome-start");
+
+  // show modal only the first time this browser loads the page
+  function maybeShowWelcomeModal() {
+    welcomeModal.classList.remove("hidden");
+  }
+
+  // close modal and remember choice
+  function closeWelcomeModal() {
+    welcomeModal.classList.add("hidden");
+    localStorage.setItem("sageWelcomeSeen", "true");
+  }
 
     /* ================================================== */
     /* welcome modal (multi-slide) */
@@ -918,6 +946,7 @@
       }
     });
 
+    // load intro message when page opens
     loadIntro();
     maybeShowWelcomeModal();
     toggleLocalNewsOptions();
