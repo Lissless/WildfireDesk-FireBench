@@ -8,7 +8,8 @@ Once enough context is collected:
 - Structure responses clearly and make them easy to follow.
 
 When helpful, use:
-- bullet points for recommendations or checklists
+- bullet points for recommendations or checklists.
+- spacing to give enough whitespace for clear reading.
 - numbered steps for processes
 - tables for comparisons, roles, timelines, or structured plans
 - short labeled sections
@@ -26,3 +27,4 @@ Avoid:
 - excessive bolding
 - raw HTML
 - markdown bold using ** ** or ## 
+- too much bold text. prioritize the minimum amount of text to bold.

@@ -1,29 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- basic page metadata -->
+  <!-- page metadata -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WildfireDesk</title>
 
-  <!-- connect external css file -->
+  <!-- external stylesheet -->
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
-  <!-- import inter font -->
+  <!-- font import -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
   <div class="app-shell">
 
-    <!-- left sidebar with product info and privacy -->
+    <!-- ================================================== -->
+    <!-- left sidebar -->
+    <!-- ================================================== -->
     <aside class="sidebar">
 
-      <!-- product title and short description -->
       <div class="sidebar-brand">
         <h1>WildfireDesk</h1>
       </div>
 
-      <!-- concise mission statement -->
       <div class="sidebar-card">
         <h2>About Sage</h2>
         <p>
@@ -35,20 +36,17 @@
         </p>
       </div>
 
-      <!-- main ways sage can help -->
       <div class="sidebar-card">
         <h2>How Sage Can Help</h2>
 
         <p>
-          Sage helps you understand your options and take practical steps after a wildfire. It supports both individual decisions and community efforts so you can move forward with clarity.
+          Sage is a civically minded chatbot that helps you understand your options and take practical steps after a wildfire. It supports both individual decisions and community efforts so you can move forward with clarity.
         </p>
 
-        <!-- toggle button -->
         <button class="expand-toggle" type="button" onclick="togglePrivacy(this)">
           See more <span class="arrow">▾</span>
         </button>
 
-        <!-- hidden content -->
         <div class="expand-content">
           <ul class="sidebar-list">
             <li>Understand your options for FEMA, insurance, and recovery</li>
@@ -59,19 +57,16 @@
         </div>
       </div>
 
-      <!-- privacy section -->
       <div class="sidebar-card">
         <h2>Privacy</h2>
         <p>
           Your privacy matters. Sage is designed to support you without storing personal information.
         </p>
 
-        <!-- toggle button for expanded privacy details -->
         <button class="expand-toggle" type="button" onclick="togglePrivacy(this)">
           See more <span class="arrow">▾</span>
         </button>
 
-        <!-- hidden content shown when expanded -->
         <div class="expand-content">
           <ul class="sidebar-list">
             <li>We do not store your personal data or chat history.</li>
@@ -81,19 +76,18 @@
         </div>
       </div>
 
-      <!-- emergency callout fixed to bottom -->
       <div class="sidebar-alert">
         If you are in immediate danger, call 911.
       </div>
     </aside>
 
-    <!-- sidebar collapse toggle -->
+    <!-- sidebar collapse button -->
     <button id="sidebar-toggle" class="sidebar-toggle" type="button">‹</button>
 
+    <!-- ================================================== -->
     <!-- main chat area -->
+    <!-- ================================================== -->
     <main class="app">
-
-      <!-- top header for sage -->
       <div class="header">
         <div class="chat-title-row">
           <div>
@@ -103,20 +97,27 @@
         </div>
       </div>
 
-      <!-- chat messages render here -->
       <div id="chat" class="chat-container">
         <div class="message sage loading" id="intro-message">Loading Sage...</div>
       </div>
 
-      <!-- input row for sending user messages -->
       <div class="input-area">
-        <input id="user-input" type="text" placeholder="Ask Sage a question..." />
+        <textarea id="user-input" rows="2" placeholder="Ask Sage a question..."></textarea>
         <button id="send-button">Send</button>
       </div>
     </main>
 
-    <!-- right sidebar for settings -->
+    <!-- ================================================== -->
+    <!-- right settings sidebar -->
+    <!-- ================================================== -->
     <aside class="settings-sidebar">
+      <div class="how-it-works-card">
+        <button id="how-it-works-btn" class="how-it-works-row" type="button">
+          <span class="how-text">How Sage works</span>
+          <span class="help-icon">?</span>
+        </button>
+      </div>
+
       <div class="settings-card">
         <div class="settings-header">
           <h2>Settings</h2>
@@ -131,15 +132,15 @@
                 i
               </button>
               <div class="tooltip-box">
-                Grounded in resources uses expert materials for more specific answers.
-                For a more general approach, switch to General.
+                Expert-informed mode uses curated expert resources to provide more specific, evidence-based guidance.
+                  For a more general approach without those materials, use General.
               </div>
             </div>
           </div>
 
           <label class="mode-option">
             <input type="radio" name="sage-mode" value="grounded" checked>
-            Grounded in resources
+            Expert-informed
           </label>
 
           <label class="mode-option">
@@ -147,66 +148,178 @@
             General response
           </label>
         </div>
+
+        <div class="settings-divider"></div>
+
+        <div class="settings-section">
+          <div class="settings-label-row">
+            <span class="settings-label">Use local news</span>
+              <div class="info-tooltip">
+                <button class="info-button" type="button" aria-label="More information">
+                  i
+                </button>
+                <div class="tooltip-box">
+                  Local news mode uses recent local reporting to make answers more relevant to your selected state or community.
+                  For a more general answer without location-specific context, turn it off.              
+                </div>
+            </div>
+          </div>
+
+          <label class="toggle-row" for="local-news-toggle">
+            <span class="toggle-text">Include local news context</span>
+            <input type="checkbox" id="local-news-toggle">
+          </label>
+        </div>
+
+        <div id="local-news-options">
+          <div class="settings-divider"></div>
+          <div class="settings-section">
+            <label class="settings-label" for="state-select">State</label>
+            <select id="state-select" class="settings-select">
+              <option value="">Select a state</option>
+              {% for state in state_community_map.keys()|sort %}
+                <option value="{{ state }}">{{ state }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="settings-divider"></div>
+
+          <div class="settings-section">
+            <label class="settings-label" for="community-select">Community</label>
+            <select id="community-select" class="settings-select">
+              <option value="">All communities</option>
+            </select>
+          </div>
+        </div>
+
       </div>
     </aside>
 
-    <!-- first-time welcome modal -->
-    <div id="welcome-modal" class="welcome-modal hidden">
-      <div class="welcome-card">
-        <button id="welcome-close" class="welcome-close" type="button" aria-label="Close tutorial">
-          ×
-        </button>
+<!-- ================================================== -->
+<!-- welcome modal -->
+<!-- ================================================== -->
+  <div id="welcome-modal" class="welcome-modal hidden">
+    <div class="welcome-card">
+      <button id="welcome-close" class="welcome-close" type="button">×</button>
+
+      <!-- ================= SLIDE 1 ================= -->
+      <div class="welcome-slide active">
+        <div class="welcome-progress">
+          <span class="dot active"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+        </div>
 
         <h2>Welcome to Sage</h2>
 
-        <p>
-          Sage is here to help with wildfire recovery and community action. You can use it to think through next steps, compare options, and create practical materials like emails, plans, or meeting agendas.
+        <p class="welcome-lead">
+          Sage is a civically minded chatbot that helps you think through wildfire recovery, rebuilding, insurance, housing, and community action.
         </p>
 
-        <div class="welcome-section">
+        <div class="welcome-soft-box">
           <h3>How to use Sage</h3>
-          <ul>
-            <li>Ask a question about recovery, organizing, housing, insurance, or rebuilding.</li>
-            <li>Sage will usually ask a few follow-up questions first so it can tailor the response.</li>
-            <li>Use Grounded in resources for answers based on expert materials and source citations.</li>
-            <li>Use General for a broader response that does not rely on the uploaded documents.</li>
-          </ul>
+          <ol>
+            <li>Start with a suggested question, or type something on your mind.</li>
+            <li>Answer any follow-up questions so Sage understands your situation.</li>
+            <li>Use the response to plan next steps, compare options, or draft materials.</li>
+          </ol>
         </div>
 
-        <div class="welcome-section">
-          <h3>Try asking</h3>
-          <ul>
-            <li>How do I organize my neighbors to rebuild safely?</li>
-            <li>What should I do if my insurance claim is delayed?</li>
-            <li>Help me draft an outreach message for a community meeting.</li>
-          </ul>
+        <div class="welcome-example">
+          Try: “Help me draft an outreach message for a community meeting.”
         </div>
-
-        <button id="welcome-start" class="welcome-start" type="button">
-          Got it
-        </button>
       </div>
+
+      <!-- ================= SLIDE 2 ================= -->
+      <div class="welcome-slide">
+        <div class="welcome-progress">
+          <span class="dot"></span>
+          <span class="dot active"></span>
+          <span class="dot"></span>
+        </div>
+
+        <h2>Response mode</h2>
+
+        <p class="welcome-lead">
+          Response mode controls what kind of information Sage uses when answering.
+        </p>
+
+        <img src="{{ url_for('static', filename='response-mode.png') }}"
+            alt="Response mode setting"
+            class="welcome-image">
+
+        <div class="welcome-soft-box">
+          <h3>How to choose</h3>
+          <ul>
+            <li><strong>Expert-informed:</strong> uses curated research and expert resources to provide more grounded, evidence-based guidance.</li>
+            <li><strong>General response:</strong> generates flexible, general-purpose answers that are useful for brainstorming, drafting, or exploring ideas.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ================= SLIDE 3 ================= -->
+      <div class="welcome-slide">
+        <div class="welcome-progress">
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span class="dot active"></span>
+        </div>
+
+        <h2>Local news context</h2>
+
+        <p class="welcome-lead">
+          Local news helps Sage tailor answers to what’s happening in your area.
+        </p>
+
+        <img src="{{ url_for('static', filename='local-news.png') }}"
+            alt="Local news setting"
+            class="welcome-image">
+
+        <div class="welcome-soft-box">
+          <h3>How to use it</h3>
+          <ol>
+            <li>Turn on “Include local news context.”</li>
+            <li>Select a state.</li>
+            <li>Choose a community, or leave it as “All communities.”</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ================= CONTROLS ================= -->
+      <div class="welcome-controls">
+        <button id="welcome-back" class="welcome-secondary">Back</button>
+        <button id="welcome-next" class="welcome-start">Next</button>
+      </div>
+
     </div>
 
   </div>
+</div>
 
-  <!-- markdown parser -->
+  <!-- external script -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
   <script>
-    /**************************************************/
-    /* main dom references */
-    /**************************************************/
+    /* ================================================== */
+    /* dom references and startup data */
+    /* ================================================== */
 
-    // grab the main page elements
     const chat = document.getElementById("chat");
     const userInput = document.getElementById("user-input");
     const sendButton = document.getElementById("send-button");
     const introMessage = document.getElementById("intro-message");
     const appShell = document.querySelector(".app-shell");
     const sidebarToggle = document.getElementById("sidebar-toggle");
+    const localNewsToggle = document.getElementById("local-news-toggle");
+    const stateSelect = document.getElementById("state-select");
+    const communitySelect = document.getElementById("community-select");
+    const stateCommunityMap = {{ state_community_map_json | safe }};
 
-    // starter questions shown under the intro message
+    const welcomeModal = document.getElementById("welcome-modal");
+    const welcomeClose = document.getElementById("welcome-close");
+    const howItWorksBtn = document.getElementById("how-it-works-btn");
+
     const starterQuestions = [
       "How do I organize my neighbors after a wildfire?",
       "How can I start a community group for recovery efforts?",
@@ -214,21 +327,15 @@
       "How do we coordinate rebuilding efforts as a group?"
     ];
 
-    /**************************************************/
-    /* sidebar collapse */
-    /**************************************************/
+    /* ================================================== */
+    /* sidebar ui */
+    /* ================================================== */
 
-    // toggle full sidebar open and close
     sidebarToggle.addEventListener("click", () => {
       const collapsed = appShell.classList.toggle("sidebar-collapsed");
       sidebarToggle.textContent = collapsed ? "›" : "‹";
     });
 
-    /**************************************************/
-    /* privacy expand */
-    /**************************************************/
-
-    // expand or collapse the privacy section
     function togglePrivacy(button) {
       const content = button.parentElement.querySelector(".expand-content");
       const isOpen = content.classList.contains("open");
@@ -242,11 +349,38 @@
       }
     }
 
-    /**************************************************/
-    /* download and editing helpers */
-    /**************************************************/
+    /* ================================================== */
+    /* community dropdown */
+    /* ================================================== */
 
-    // create and download a word document from html content
+    function populateCommunityOptions(selectedState) {
+      communitySelect.innerHTML = "";
+
+      const defaultOption = document.createElement("option");
+      defaultOption.value = "";
+      defaultOption.textContent = "All communities";
+      communitySelect.appendChild(defaultOption);
+
+      if (!selectedState || !stateCommunityMap[selectedState]) {
+        return;
+      }
+
+      stateCommunityMap[selectedState].forEach((community) => {
+        const option = document.createElement("option");
+        option.value = community;
+        option.textContent = community;
+        communitySelect.appendChild(option);
+      });
+    }
+
+    stateSelect.addEventListener("change", () => {
+      populateCommunityOptions(stateSelect.value);
+    });
+
+    /* ================================================== */
+    /* input and download helpers */
+    /* ================================================== */
+
     function downloadWordDoc(filename, htmlContent) {
       const fullHtml = `
         <html xmlns:o="urn:schemas-microsoft-com:office:office"
@@ -275,16 +409,28 @@
       URL.revokeObjectURL(url);
     }
 
-    // size the textarea to match the content, but cap it at 70% of screen height
     function autoResizeTextarea(textarea) {
       textarea.style.height = "auto";
       const maxHeight = window.innerHeight * 0.7;
       textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + "px";
     }
 
-    /**************************************************/
-    /* citation formatting */
-    /**************************************************/
+    userInput.addEventListener("input", () => {
+      userInput.style.height = "auto";
+      userInput.style.height = userInput.scrollHeight + "px";
+    });
+
+    /* ================================================== */
+    /* source and link formatting */
+    /* ================================================== */
+
+    function linkifyText(text) {
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+
+      return text.replace(urlRegex, function(url) {
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+      });
+    }
 
     function formatSources(sources) {
       if (typeof sources !== "string") {
@@ -297,10 +443,6 @@
         return sources;
       }
 
-      /**************************************************/
-      /* split intro text from citations */
-      /**************************************************/
-
       const firstCitationMatch = text.match(/(?:^|\n)\s*1[\).\s]/);
 
       let introText = "";
@@ -311,10 +453,6 @@
         citationsText = text.slice(firstCitationMatch.index).trim();
       }
 
-      /**************************************************/
-      /* split only on numbered citations */
-      /**************************************************/
-
       const citationBlocks = citationsText
         .split(/\n(?=\s*\d+[\).\s])/)
         .map(block => block.trim())
@@ -324,20 +462,14 @@
         return marked.parse(sources);
       }
 
-      /**************************************************/
-      /* build intro paragraph */
-      /**************************************************/
-
       const introHtml = introText
         ? `<p>${introText.replace(/\n/g, "<br>")}</p>`
         : "";
 
-      /**************************************************/
-      /* build citation blocks */
-      /**************************************************/
-
       const citationsHtml = citationBlocks.map((block, index) => {
-        const cleaned = block.replace(/^\d+[\).\s]+/, "").trim();
+        const cleaned = linkifyText(
+          block.replace(/^\d+[\).\s]+/, "").trim()
+        );
 
         return `
           <div class="source-item">
@@ -349,10 +481,6 @@
         `;
       }).join("");
 
-      /**************************************************/
-      /* return final html */
-      /**************************************************/
-
       return `
         ${introHtml}
         <div class="sources-card">
@@ -361,26 +489,23 @@
         </div>
       `;
     }
-    /**************************************************/
-    /* message rendering */
-    /**************************************************/
 
-    // add a message bubble to the chat
-    function addMessage(text, sender, sources = null, showActions = true) {
+    /* ================================================== */
+    /* message rendering */
+    /* ================================================== */
+
+    function addMessage(text, sender, sources = null, showActions = true, followups = []) {
       const wrapper = document.createElement("div");
       wrapper.className = `message-wrapper ${sender}`;
 
-      // create the main message bubble
       const bubble = document.createElement("div");
       bubble.className = `message ${sender}`;
 
-      // create the rendered markdown content
       const contentDiv = document.createElement("div");
       contentDiv.className = "message-content";
       contentDiv.innerHTML = marked.parse(text);
       bubble.appendChild(contentDiv);
 
-      // only sage responses get action buttons
       let sourcesDiv = null;
 
       if (sender === "sage" && showActions) {
@@ -403,7 +528,6 @@
         let textarea = null;
         let originalText = text;
 
-        // copy the visible text of the message
         copyBtn.onclick = async () => {
           await navigator.clipboard.writeText(contentDiv.innerText);
           copyBtn.textContent = "Copied";
@@ -412,33 +536,27 @@
           }, 1500);
         };
 
-        // switch into edit mode or save edited content
         editBtn.onclick = () => {
           if (!isEditing) {
             isEditing = true;
 
-            // create the textarea with the original markdown text
             textarea = document.createElement("textarea");
             textarea.className = "message-editor";
             textarea.value = originalText;
 
-            // replace rendered content with the textarea
             bubble.replaceChild(textarea, contentDiv);
             bubble.classList.add("editing");
 
             editBtn.textContent = "Save";
 
-            // wait until textarea is in the dom, then size it to match message height
             requestAnimationFrame(() => {
               autoResizeTextarea(textarea);
               textarea.focus();
               textarea.setSelectionRange(textarea.value.length, textarea.value.length);
             });
 
-            // resize while user types
             textarea.addEventListener("input", () => autoResizeTextarea(textarea));
 
-            // add cancel button if it does not already exist
             let cancelBtn = actions.querySelector('[data-role="cancel"]');
 
             if (!cancelBtn) {
@@ -447,7 +565,6 @@
               cancelBtn.textContent = "Cancel";
               cancelBtn.dataset.role = "cancel";
 
-              // put original rendered message back if user cancels
               cancelBtn.onclick = () => {
                 isEditing = false;
                 contentDiv.innerHTML = marked.parse(originalText);
@@ -463,7 +580,6 @@
           } else {
             isEditing = false;
 
-            // save updated text and render it as markdown again
             originalText = textarea.value;
             contentDiv.innerHTML = marked.parse(originalText);
 
@@ -471,13 +587,11 @@
             bubble.classList.remove("editing");
             editBtn.textContent = "Edit";
 
-            // remove cancel button after saving
             const cancelBtn = actions.querySelector('[data-role="cancel"]');
             if (cancelBtn) cancelBtn.remove();
           }
         };
 
-        // download the message content, and sources if they exist
         downloadBtn.onclick = () => {
           const temp = document.createElement("div");
           temp.innerHTML = contentDiv.innerHTML;
@@ -498,7 +612,6 @@
 
       wrapper.appendChild(bubble);
 
-      // add collapsible sources outside the message bubble
       if (sources) {
         const citationsArea = document.createElement("div");
         citationsArea.className = "citations-area";
@@ -523,7 +636,6 @@
             sourcesDiv.classList.add("open");
             arrow.textContent = "▴";
 
-            // scroll to the bottom of the expanded citations block
             requestAnimationFrame(() => {
               sourcesDiv.scrollIntoView({ behavior: "smooth", block: "end" });
             });
@@ -535,65 +647,107 @@
         wrapper.appendChild(citationsArea);
       }
 
-      // add message to chat
+      if (sender === "sage" && followups.length > 0) {
+        addFollowupQuestions(wrapper, followups);
+      }
+
       chat.appendChild(wrapper);
 
-      // for bot replies, bring the top of the reply into view automatically
-      if (sender === "sage") {
-        requestAnimationFrame(() => {
-          wrapper.scrollIntoView({ behavior: "smooth", block: "start" });
-        });
-      } else {
+      if (sender !== "sage") {
         chat.scrollTop = chat.scrollHeight;
       }
+
+      return wrapper;
     }
 
-  // add clickable starter questions under the intro message
-  function addStarterQuestions() {
-    const wrapper = document.createElement("div");
-    wrapper.className = "starter-questions";
-    wrapper.id = "starter-questions";
+    /* ================================================== */
+    /* starter and follow-up question buttons */
+    /* ================================================== */
 
-    const label = document.createElement("div");
-    label.className = "starter-label";
-    label.textContent = "You can also ask:";
-    wrapper.appendChild(label);
+    function addStarterQuestions() {
+      const wrapper = document.createElement("div");
+      wrapper.className = "starter-questions";
+      wrapper.id = "starter-questions";
 
-    starterQuestions.forEach((question) => {
-      const button = document.createElement("button");
-      button.className = "starter-question-button";
-      button.type = "button";
-      button.textContent = question;
+      const label = document.createElement("div");
+      label.className = "starter-label";
+      label.textContent = "You can start by asking:";
+      wrapper.appendChild(label);
 
-      // click to send the question right away, then remove the starter chips
-      button.addEventListener("click", () => {
-        userInput.value = question;
+      starterQuestions.forEach((question) => {
+        const button = document.createElement("button");
+        button.className = "starter-question-button";
+        button.type = "button";
+        button.textContent = question;
 
-        const starterBlock = document.getElementById("starter-questions");
-        if (starterBlock) {
-          starterBlock.remove();
-        }
+        button.addEventListener("click", () => {
+          userInput.value = question;
 
-        sendMessage();
+          const starterBlock = document.getElementById("starter-questions");
+          if (starterBlock) {
+            starterBlock.remove();
+          }
+
+          sendMessage();
+        });
+
+        wrapper.appendChild(button);
       });
 
-      wrapper.appendChild(button);
-    });
+      chat.appendChild(wrapper);
+    }
 
-    chat.appendChild(wrapper);
-  }
+    function addFollowupQuestions(parentWrapper, questions) {
+      if (!questions || questions.length === 0) return;
 
-    /**************************************************/
+      const wrapper = document.createElement("div");
+      wrapper.className = "starter-questions followup-questions";
+
+      const label = document.createElement("div");
+      label.className = "starter-label";
+      label.textContent = "You might be thinking...";
+      wrapper.appendChild(label);
+
+      questions.slice(0, 2).forEach((question) => {
+        const button = document.createElement("button");
+        button.className = "starter-question-button";
+        button.type = "button";
+        button.textContent = question;
+
+        button.addEventListener("click", () => {
+          userInput.value = question;
+          userInput.style.height = "auto";
+          userInput.style.height = userInput.scrollHeight + "px";
+
+          wrapper.remove();
+
+          sendMessage();
+        });
+
+        wrapper.appendChild(button);
+      });
+
+      parentWrapper.appendChild(wrapper);
+    }
+
+    function clearSuggestedQuestions() {
+      const starterBlock = document.getElementById("starter-questions");
+      if (starterBlock) {
+        starterBlock.remove();
+      }
+
+      const followupBlocks = document.querySelectorAll(".followup-questions");
+      followupBlocks.forEach((block) => block.remove());
+    }
+
+    /* ================================================== */
     /* api calls */
-    /**************************************************/
+    /* ================================================== */
 
-    // load the intro message from the backend
     async function loadIntro() {
       try {
         const response = await fetch("/intro");
         const data = await response.json();
-
-        console.log("intro response:", data);
 
         introMessage.remove();
         addMessage(data.intro, "sage", null, false);
@@ -609,40 +763,83 @@
     const message = userInput.value.trim();
     if (!message) return;
 
-    // get selected mode from toggle
-    const selectedMode = document.querySelector('input[name="sage-mode"]:checked').value;
+      clearSuggestedQuestions();
 
-    addMessage(message, "user");
-    userInput.value = "";
+      const selectedMode = document.querySelector('input[name="sage-mode"]:checked').value;
 
-    // show temporary loading state
-    const loadingWrapper = document.createElement("div");
-    loadingWrapper.className = "message-wrapper sage";
+      addMessage(message, "user");
+      userInput.value = "";
+      userInput.style.height = "auto";
 
-    const loading = document.createElement("div");
-    loading.className = "message sage loading";
-    loading.textContent = "Sage is thinking...";
+      const loadingWrapper = document.createElement("div");
+      loadingWrapper.className = "message-wrapper sage";
+
+      const loading = document.createElement("div");
+      loading.className = "message sage loading";
+
+      // change message if local news is on
+      const loadingText = localNewsToggle.checked
+        ? "Sage is searching local news (this may take a moment)"
+        : "Sage is thinking";
+
+      loading.innerHTML = `
+        <span class="loading-text">${loadingText}</span>
+        <span class="loading-dots">
+          <span>.</span><span>.</span><span>.</span>
+        </span>
+      `;
+
+      loadingWrapper.appendChild(loading);
+      chat.appendChild(loadingWrapper);
+      chat.scrollTop = chat.scrollHeight;
+
+      console.log("sending settings:", {
+        mode: selectedMode,
+        use_local_news: localNewsToggle.checked,
+        selected_state: stateSelect.value,
+        selected_community: communitySelect.value
+      });
+
+      try {
+        const response = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message,
+            mode: selectedMode,
+            use_local_news: localNewsToggle.checked,
+            selected_state: stateSelect.value,
+            selected_community: communitySelect.value
+          })
+        });
+
+        const rawData = await response.json();
+        console.log("chat response:", rawData);
+
+        const answerText = rawData[0];
+        const data = rawData[1];
+
+        loadingWrapper.remove();
 
     loadingWrapper.appendChild(loading);
     chat.appendChild(loadingWrapper);
     chat.scrollTop = chat.scrollHeight;
 
-    try {
-      const response = await fetch("/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message,
-          mode: selectedMode
-        })
-      });
+        const messageWrapper = addMessage(
+          data.answer,
+          "sage",
+          data.sources,
+          true,
+          data.followups || []
+        );
 
-      const data = await response.json();
-      loadingWrapper.remove();
+        requestAnimationFrame(() => {
+          messageWrapper.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
 
-      if (data.error) {
-        addMessage(data.error, "sage");
-        return;
+      } catch {
+        loadingWrapper.remove();
+        addMessage("Something went wrong while contacting Sage.", "sage");
       }
 
       addMessage(data.answer, "sage", data.sources, true);
@@ -672,24 +869,87 @@
     localStorage.setItem("sageWelcomeSeen", "true");
   }
 
-  welcomeClose.addEventListener("click", closeWelcomeModal);
-  welcomeStart.addEventListener("click", closeWelcomeModal);
+    /* ================================================== */
+    /* welcome modal (multi-slide) */
+    /* ================================================== */
 
-    /**************************************************/
-    /* event listeners */
-    /**************************************************/
+    const welcomeSlides = document.querySelectorAll(".welcome-slide");
+    const welcomeBack = document.getElementById("welcome-back");
+    const welcomeNext = document.getElementById("welcome-next");
 
-    // click send button to submit message
+    let welcomeSlideIndex = 0;
+
+    function showSlide(index) {
+      welcomeSlides.forEach((slide, i) => {
+        slide.classList.toggle("active", i === index);
+      });
+
+      welcomeBack.style.visibility = index === 0 ? "hidden" : "visible";
+      welcomeNext.textContent = index === welcomeSlides.length - 1 ? "Got it" : "Next";
+    }
+
+    function maybeShowWelcomeModal() {
+      welcomeSlideIndex = 0;
+      showSlide(welcomeSlideIndex);
+      welcomeModal.classList.remove("hidden");
+    }
+
+    function closeWelcomeModal() {
+      welcomeModal.classList.add("hidden");
+      localStorage.setItem("sageWelcomeSeen", "true");
+    }
+
+    howItWorksBtn.addEventListener("click", () => {
+      welcomeSlideIndex = 0;
+      showSlide(welcomeSlideIndex);
+      welcomeModal.classList.remove("hidden");
+    });
+
+    welcomeClose.addEventListener("click", closeWelcomeModal);
+
+    welcomeNext.addEventListener("click", () => {
+      if (welcomeSlideIndex < welcomeSlides.length - 1) {
+        welcomeSlideIndex++;
+        showSlide(welcomeSlideIndex);
+      } else {
+        closeWelcomeModal();
+      }
+    });
+
+    welcomeBack.addEventListener("click", () => {
+      if (welcomeSlideIndex > 0) {
+        welcomeSlideIndex--;
+        showSlide(welcomeSlideIndex);
+      }
+    });
+    /* ================================================== */
+    /* app event listeners and startup */
+    /* ================================================== */
+    function toggleLocalNewsOptions() {
+      const container = document.getElementById("local-news-options");
+
+      if (localNewsToggle.checked) {
+        container.style.display = "block";
+      } else {
+        container.style.display = "none";
+      }
+    }
+
+    localNewsToggle.addEventListener("change", toggleLocalNewsOptions);
+
     sendButton.addEventListener("click", sendMessage);
 
-    // press enter to submit message
-    userInput.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") sendMessage();
+    userInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
     });
 
     // load intro message when page opens
     loadIntro();
     maybeShowWelcomeModal();
+    toggleLocalNewsOptions();
   </script>
 </body>
 </html>
