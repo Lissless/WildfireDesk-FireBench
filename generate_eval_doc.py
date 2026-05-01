@@ -1,11 +1,18 @@
 import json
+import csv
 import re
+import sys
 import argparse
+from collections import Counter, defaultdict
 from docx import Document
 from docx.shared import Pt, RGBColor, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
+
+if hasattr(sys.stdout, 'reconfigure'):
+	sys.stdout.reconfigure(encoding='utf-8')  # type: ignore[union-attr]
+
 
 def set_cell_bg(cell, hex_color):
 	tc = cell._tc
@@ -100,39 +107,86 @@ def add_horizontal_rule(doc):
 	return p
 
 
-def add_grading_table(doc, grade_fields):
-	table = doc.add_table(rows=1, cols=2)
+def build_rubric_data(csv_path):
+	"""从CSV读取rubric数据，返回 Category -> [行字典列表] 的映射，自动处理重复Label。"""
+	category_rows = {}
+
+	with open(csv_path, encoding='utf-8') as f:
+		reader = csv.DictReader(f)
+		for row in reader:
+			cat = row['Category'].strip()
+			if not cat:
+				continue
+			if cat not in category_rows:
+				category_rows[cat] = []
+			category_rows[cat].append({
+				'Label': row['Label'].strip(),
+				'Element': row['Element (Question)'].strip(),
+				'Description': row['Description'].strip(),
+				'Why it matters': row['Why it matters'].strip(),
+				'Points': row['Points'].strip(),
+			})
+
+	# 检测重复Label并添加数字后缀，与civic_judge.json的key保持一致
+	for cat, rows in category_rows.items():
+		labels = [r['Label'] for r in rows]
+		counts = Counter(labels)
+		seen = defaultdict(int)
+		for row in rows:
+			label = row['Label']
+			if counts[label] > 1:
+				seen[label] += 1
+				row['Label'] = f"{label}{seen[label]}"
+
+	return category_rows
+
+
+def add_rubric_table(doc, rubric_rows):
+	"""添加6列rubric评分表格：Label, Element, Description, Why it matters, Max Points, Your Points。"""
+	col_headers = ['Label', 'Element', 'Description', 'Why it matters', 'Max Points', 'Your Points']
+	# 总可用宽度约6.1英寸（8.5 - 1.2*2）
+	col_widths = [Inches(0.9), Inches(1.4), Inches(1.6), Inches(1.2), Inches(0.5), Inches(0.5)]
+
+	table = doc.add_table(rows=1, cols=6)
 	table.style = "Table Grid"
 
-	# 表头
+	# 表头行
 	hdr = table.rows[0].cells
-	hdr[0].text = "Dimension"
-	hdr[1].text = "Grade"
-	for cell in hdr:
-		for para in cell.paragraphs:
+	for i, header in enumerate(col_headers):
+		hdr[i].text = header
+		for para in hdr[i].paragraphs:
 			for run in para.runs:
 				run.bold = True
-				run.font.size = Pt(10)
-		set_cell_bg(cell, "D9E1F2")
+				run.font.size = Pt(9)
+		set_cell_bg(hdr[i], "D9E1F2")
 
-	for field in grade_fields:
+	# 数据行
+	for row_data in rubric_rows:
 		row = table.add_row().cells
-		row[0].text = field
-		row[1].text = ""
-		for para in row[0].paragraphs:
-			for run in para.runs:
-				run.font.size = Pt(10)
-		for para in row[1].paragraphs:
-			para.paragraph_format.space_after = Pt(16)
+		row[0].text = row_data['Label']
+		row[1].text = row_data['Element']
+		row[2].text = row_data['Description']
+		row[3].text = row_data['Why it matters']
+		row[4].text = row_data['Points']
+		row[5].text = ''
+		for i in range(6):
+			for para in row[i].paragraphs:
+				for run in para.runs:
+					run.font.size = Pt(9)
 
+	# 设置列宽
 	for row in table.rows:
-		row.cells[0].width = Inches(2.5)
-		row.cells[1].width = Inches(4.0)
+		for i, width in enumerate(col_widths):
+			row.cells[i].width = width
+
 
 def generate_doc(json_path="eval/data/civic_judge.json",
+				 csv_path="eval/data/civicbench_rubrics.xlsx - Rubric Questions Full.csv",
 				 output_path="eval/data/civic_expert_eval.docx"):
 	with open(json_path, encoding="utf-8") as f:
 		data = json.load(f)
+
+	rubric_data = build_rubric_data(csv_path)
 
 	doc = Document()
 	for section in doc.sections:
@@ -146,15 +200,6 @@ def generate_doc(json_path="eval/data/civic_judge.json",
 	sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
 	sub.runs[0].font.color.rgb = RGBColor(0x55, 0x55, 0x55)
 	doc.add_paragraph()
-
-	grade_fields = [
-		"Factual and Procedural Accuracy",
-		"Actionability",
-		"Contextual Relevance",
-		"Completeness",
-		"Clarity & Usability",
-		"Civic Responsibility",
-	]
 
 	for idx, item in enumerate(data):
 		if idx > 0:
@@ -205,15 +250,22 @@ def generate_doc(json_path="eval/data/civic_judge.json",
 		add_horizontal_rule(doc)
 		add_label_paragraph(doc, "Expert Grading", font_size=11, color="7B2C2C")
 		doc.add_paragraph()
-		add_grading_table(doc, grade_fields)
+
+		# 根据high_class查找对应rubric行，找不到时打印警告
+		rubric_rows = rubric_data.get(high_class)
+		if rubric_rows is None:
+			print(f"警告：未找到Category '{high_class}' 对应的rubric（id={_id}）")
+			rubric_rows = []
+		add_rubric_table(doc, rubric_rows)
 
 	doc.save(output_path)
-	print(f"Done：{output_path}（ {len(data)} elements）")
+	print(f"Done：{output_path}（{len(data)} elements）")
 
 
 if __name__ == "__main__":
-	parser = argparse.ArgumentParser()
-	parser.add_argument("--input", default="eval/data/civic_judge.json", help="JSON path")
-	parser.add_argument("--output", default="eval/data/civic_expert_eval.docx", help="Word path")
+	parser = argparse.ArgumentParser(description="生成civic评测Word文档")
+	parser.add_argument("--input", default="eval/data/civic_judge.json", help="JSON路径")
+	parser.add_argument("--rubric", default="eval/data/civicbench_rubrics.xlsx - Rubric Questions Full.csv", help="Rubric CSV路径")
+	parser.add_argument("--output", default="eval/data/civic_expert_eval.docx", help="Word输出路径")
 	args = parser.parse_args()
-	generate_doc(json_path=args.input, output_path=args.output)
+	generate_doc(json_path=args.input, csv_path=args.rubric, output_path=args.output)
