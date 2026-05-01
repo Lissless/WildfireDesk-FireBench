@@ -284,9 +284,6 @@ def run_benchmark(data_dir="eval/data", output_path="eval/data/civic_judge.json"
 	print(f"\nDone！total {len(results)} elements, write to {output_path}")
 
 
-def chat_with_civic_bot():
-	pass
-
 if __name__ == "__main__":
 	import argparse
 	parser = argparse.ArgumentParser()
