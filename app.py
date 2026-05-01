@@ -3,6 +3,7 @@ import importlib.util
 import pathlib
 import json
 from wildfire_desk import Sage
+import os
 
 # load wildfire-desk.py
 module_path = pathlib.Path(__file__).parent / "wildfire_desk.py"
@@ -70,4 +71,10 @@ if __name__ == "__main__":
     if not sage.setup_sage(False):
         raise RuntimeError("Failed to set up Sage")
 
-    app.run(host="127.0.0.1", port=5000, debug=True, use_reloader=False)
+    port = int(os.environ.get("PORT", 5000))
+
+    # for render deployment: must use host="0.0.0.0" and dynamic PORT
+    # if running locally, this still works (defaults to port 5000),
+    # but you can change back to app.run() if you want simpler local testing
+
+    app.run(host="0.0.0.0", port=port)
