@@ -49,7 +49,7 @@ DIM_ABBREV = [
 	"Civic\nResponsibility",
 ]
 
-
+# here, eval all the needed models
 def query_llm(query_prompt, args):
 	tries = 0
 	while tries < 5:
