@@ -16,7 +16,6 @@ base_dir = os.path.dirname(__file__)
 
 
 def build_rubric_data(csv_path):
-	"""从CSV读取rubric，返回 Category -> [行字典列表] 映射，自动处理重复Label加数字后缀。"""
 	category_rows = {}
 
 	with open(csv_path, encoding='utf-8') as f:
@@ -35,7 +34,6 @@ def build_rubric_data(csv_path):
 				'Points':      int(row['Points'].strip()),
 			})
 
-	# 与 civic_judge.json 的 key 保持一致：重复 Label 加数字后缀
 	for cat, rows in category_rows.items():
 		labels = [r['Label'] for r in rows]
 		counts = Counter(labels)
@@ -74,7 +72,6 @@ def build_conversation(item):
 
 
 def build_judge_prompt(conversation_text, rubric_rows):
-	"""根据该 Category 的 rubric 行，构建 LLM judge prompt。"""
 	dim_lines = []
 	json_lines = []
 
@@ -87,7 +84,9 @@ def build_judge_prompt(conversation_text, rubric_rows):
 			f"{i}. {label} (0–{pts} points): {element}\n"
 			f"   Criterion: {desc}"
 		)
-		json_lines.append(f'  "{label}": <integer 0-{pts}>')
+		json_lines.append(
+			f'  "{label}": {{"score": <integer 0-{pts}>, "reason": "<one sentence explanation>"}}'
+		)
 
 	dim_desc   = "\n\n".join(dim_lines)
 	json_format = "{\n" + ",\n".join(json_lines) + "\n}"
@@ -98,7 +97,8 @@ def build_judge_prompt(conversation_text, rubric_rows):
 		f"{conversation_text}\n\n"
 		"---\n\n"
 		"Please evaluate the assistant's response(s) on the following dimensions. "
-		"Each dimension shows its maximum score in parentheses — score from 0 to that maximum.\n\n"
+		"Each dimension shows its maximum score in parentheses — score from 0 to that maximum. "
+		"For each dimension provide a score and a one-sentence reason.\n\n"
 		f"{dim_desc}\n\n"
 		"Respond ONLY with a JSON object in this exact format, with no extra text:\n"
 		f"{json_format}"
@@ -106,33 +106,38 @@ def build_judge_prompt(conversation_text, rubric_rows):
 	return prompt
 
 
-def extract_scores(response_text, rubric_rows):
-	"""从 LLM 返回文本中提取各 Label 的得分，超出范围时截断到 [0, max_points]。"""
+def extract_scores_and_reasons(response_text, rubric_rows):
 	max_pts = {row['Label']: row['Points'] for row in rubric_rows}
-	result: dict[str, int | None] = {row['Label']: None for row in rubric_rows}
+	scores:  dict[str, int | None] = {row['Label']: None for row in rubric_rows}
+	reasons: dict[str, str]        = {row['Label']: ""   for row in rubric_rows}
 
-	match = re.search(r'\{[^{}]*\}', response_text, re.DOTALL)
-	if match:
+	start = response_text.find('{')
+	end   = response_text.rfind('}')
+	if start != -1 and end > start:
 		try:
 			print("Found json")
-			parsed = json.loads(match.group())
+			parsed = json.loads(response_text[start:end + 1])
 			for label, max_p in max_pts.items():
 				val = parsed.get(label)
-				if val is not None:
-					result[label] = max(0, min(max_p, int(val)))
-			print(result)
-			return result
+				if isinstance(val, dict):
+					s = val.get('score')
+					if s is not None:
+						scores[label] = max(0, min(max_p, int(s)))
+					reasons[label] = str(val.get('reason', ''))
+				elif val is not None:
+					scores[label] = max(0, min(max_p, int(val)))
+			print(scores)
+			return scores, reasons
 		except (json.JSONDecodeError, ValueError):
 			pass
 
-	# 备用：逐维度正则匹配
 	for label, max_p in max_pts.items():
 		pattern = re.escape(label) + r'["\s:]*(\d+)'
 		m = re.search(pattern, response_text, re.IGNORECASE)
 		if m:
-			result[label] = max(0, min(max_p, int(m.group(1))))
+			scores[label] = max(0, min(max_p, int(m.group(1))))
 
-	return result
+	return scores, reasons
 
 
 def get_pred(data, args, save_path, rubric_data):
@@ -142,7 +147,7 @@ def get_pred(data, args, save_path, rubric_data):
 		high_class  = item.get('high_class', '')
 		rubric_rows = rubric_data.get(high_class, [])
 		if not rubric_rows:
-			print(f"警告：未找到 Category '{high_class}' 对应的 rubric，跳过 id={item.get('_id')}")
+			print(f"Warning：No Category '{high_class}' corresponding rubric，skip id={item.get('_id')}")
 			continue
 
 		conversation_text = build_conversation(item)
@@ -155,7 +160,9 @@ def get_pred(data, args, save_path, rubric_data):
 		response_text = response_text.strip()
 		#print("response: ", response_text)
 
-		item['AI_grade'] = extract_scores(response_text, rubric_rows)
+		scores, reasons = extract_scores_and_reasons(response_text, rubric_rows)
+		item['AI_grade']         = scores
+		item['AI_grade_reasons'] = reasons
 		results.append(item)
 
 	with open(save_path, "w", encoding="utf-8") as f:
@@ -168,7 +175,6 @@ def eval_pred(out_file, save_dir, rubric_data):
 
 	stem = os.path.splitext(os.path.basename(out_file))[0]
 
-	# 按难度和 high_class 分别累计实际总分与满分总和
 	diff_actual  = defaultdict(int)
 	diff_max     = defaultdict(int)
 	class_actual = defaultdict(int)
@@ -187,7 +193,6 @@ def eval_pred(out_file, save_dir, rubric_data):
 				class_actual[high_class] += score
 				class_max[high_class]    += row['Points']
 
-	# --- Chart 1：各难度得分比例竖柱状图 ---
 	diff_order = [d for d in ['Easy', 'Medium', 'Hard'] if d in diff_max]
 	if diff_order:
 		ratios = [diff_actual[d] / diff_max[d] for d in diff_order]
@@ -206,7 +211,6 @@ def eval_pred(out_file, save_dir, rubric_data):
 		plt.close(fig1)
 		print(f"Saved: {fig1_path}")
 
-	# --- Chart 2：各 high_class 得分比例竖柱状图 ---
 	if class_max:
 		classes = sorted(class_max.keys())
 		ratios  = [class_actual[c] / class_max[c] for c in classes]
@@ -245,12 +249,12 @@ def main():
 
 
 if __name__ == '__main__':
-	parser = argparse.ArgumentParser(description="用 LLM judge 对 civic_judge.json 按 rubric 打分")
+	parser = argparse.ArgumentParser(description="LLM-as-a-judge")
 	parser.add_argument("--model",  "-m", type=str,  default="4o-mini")
 
 	parser.add_argument("--file",   "-f", type=str,  default="civic_judge")
 	parser.add_argument("--rubric", "-rb", type=str,
 		default=os.path.join(base_dir, "data", "civicbench_rubrics.xlsx - Rubric Questions Full.csv"),
-		help="Rubric CSV 路径")
+		help="Rubric CSV path")
 	args = parser.parse_args()
 	main()

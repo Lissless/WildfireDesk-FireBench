@@ -1,12 +1,13 @@
-from build.lib.llmproxy import LLMProxy
 import datetime
 import sys
 import os
 import json
-import glob
 import pandas as pd
+from collections import Counter, defaultdict
 from civic_chatbot import CivicChatbot
 from wildfire_desk import Sage
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'eval'))
+from raw_bot import RawBot
 
 ### ----------------------------------------------------------------------------------------------------
 ### Orchid Class
@@ -24,9 +25,7 @@ class BenchEvaluatorOrchid():
     ### Orchid Settings
     ### ----------------------------------------------------------------------------------------------------
 
-    orchid = LLMProxy()
     orchid_sys = ""
-    orchid_model = "4o-mini"
     orchid_temperature = 0.7
     orchid_session_id = "orchid_" + str(timestamp)
     orchid_sys_filepath = "orchid-resources/orchid-tone.txt"
@@ -36,8 +35,9 @@ class BenchEvaluatorOrchid():
     exit_eval_filepath = "orchid-resources/exit-evaluator-tone.txt"
 
 
-    def __init__(self, civic_bot:CivicChatbot):
-        self.civic_bot = civic_bot
+    def __init__(self, civic_bot: CivicChatbot, orchid_bot: RawBot):
+        self.civic_bot  = civic_bot
+        self.orchid_bot = orchid_bot
 
 
     ### ----------------------------------------------------------------------------------------------------
@@ -47,8 +47,8 @@ class BenchEvaluatorOrchid():
     # function: prompt_orchid
     # sends a prompt to ivy and returns the model response
     def prompt_orchid(self, query_prompt, sys):
-        response = self.orchid.generate(
-            model=self.orchid_model,
+        response = self.orchid_bot.rchatgpt.generate(
+            model=self.orchid_bot.model,
             system=sys,
             query=query_prompt,
             temperature=self.orchid_temperature,
@@ -56,10 +56,10 @@ class BenchEvaluatorOrchid():
             lastk=5
         )
         return response
-    
+
     def prompt_early_exit(self, query_prompt):
-        response = self.orchid.generate(
-            model=self.orchid_model,
+        response = self.orchid_bot.rchatgpt.generate(
+            model=self.orchid_bot.model,
             system=self.exit_eval_sys,
             query=query_prompt,
             temperature=0,
@@ -191,8 +191,9 @@ class BenchEvaluatorOrchid():
 
 def main():
     sage = Sage()
-    sage.setup_sage(False)
-    orchid = BenchEvaluatorOrchid(sage)
+    sage.setup_sage(True)
+    orchid_bot = RawBot("4o-mini")
+    orchid = BenchEvaluatorOrchid(sage, orchid_bot)
 
     if not orchid.setup_orchid():
         print("An error occurred when setting up this application.")
@@ -216,10 +217,41 @@ def main():
 
             #     usr = input("Type your response here: ")
 
-def run_benchmark(data_dir="eval/data", output_path="eval/data/civic_judge.json"):
+def _load_rubric_labels(rubric_csv: str) -> dict:
+	rubric_df = pd.read_csv(rubric_csv)
+	rubric_df = rubric_df[rubric_df['Category'].notna()]
+
+	category_labels: dict = {}
+	for _, row in rubric_df.iterrows():
+		cat = str(row['Category']).strip()
+		lbl = str(row['Label']).strip()
+		category_labels.setdefault(cat, []).append(lbl)
+
+	for cat, labels in category_labels.items():
+		counts = Counter(labels)
+		seen: dict = defaultdict(int)
+		new_labels = []
+		for lbl in labels:
+			if counts[lbl] > 1:
+				seen[lbl] += 1
+				new_labels.append(f"{lbl}{seen[lbl]}")
+			else:
+				new_labels.append(lbl)
+		category_labels[cat] = new_labels
+
+	return category_labels
+
+
+def run_benchmark(
+	data_dir="eval/data",
+	questions_csv="eval/data/civicbench_questions.xlsx - iteration 2.csv",
+	rubric_csv="eval/data/civicbench_rubrics.xlsx - Rubric Questions Full.csv",
+	output_path="eval/data/civic_judge.json",
+):
 	sage = Sage()
-	sage.setup_sage(False)
-	orchid = BenchEvaluatorOrchid(sage)
+	sage.setup_sage(True)
+	orchid_bot = RawBot("4o-mini")
+	orchid = BenchEvaluatorOrchid(sage, orchid_bot)
 
 	if not orchid.setup_orchid():
 		print("An error occurred when setting up this application.")
@@ -227,56 +259,47 @@ def run_benchmark(data_dir="eval/data", output_path="eval/data/civic_judge.json"
 
 	os.makedirs(os.path.join(data_dir, "log_orchid"), exist_ok=True)
 
-	csv_files = glob.glob(os.path.join(data_dir, "*.csv"))
-	if not csv_files:
-		print(f"No CSV files found in {data_dir}")
-		return
+	category_labels = _load_rubric_labels(rubric_csv)
+
+	df = pd.read_csv(questions_csv)
+	df = df[df["Question"].notna() & (df["Question"].str.strip() != "")]
 
 	results = []
 	current_id = 1
 
-	for csv_path in csv_files:
-		print(f"\nreading: {csv_path}")
-		df = pd.read_csv(csv_path)
+	for _, row in df.iterrows():
+		question   = row["Question"].strip()
+		level      = row.get("Level", "")
+		category   = row.get("Category", "")
+		subcategory = row.get("Subcategory", "")
 
-		df = df[df["Question"].notna() & (df["Question"].str.strip() != "")]
+		cat_str = str(category).strip() if pd.notna(category) else ""
+		print(f"\n[{current_id}] run question: {question[:60]}...")
 
-		for _, row in df.iterrows():
-			question = row["Question"].strip()
-			level = row.get("Level", "")
-			category = row.get("Category", "")
-			subcategory = row.get("Subcategory", "")
+		timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+		log_path = os.path.join(data_dir, "log_orchid",
+			f"log-orchid-{current_id:03d}-{timestamp}.txt")
 
-			print(f"\n[{current_id}] run question: {question[:60]}...")
+		with open(log_path, "w", encoding="utf-8") as log_file:
+			log_file.write(f"Key Question: {question}\n\n")
+			orchid_prompts, civbot_responses = orchid.eval_convo(log_file, question)
 
-			timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-			log_path = f"eval/data/log_orchid/log-orchid-{current_id:03d}-{timestamp}.txt"
+		orchid.refresh_orchid()
 
-			with open(log_path, "w", encoding="utf-8") as log_file:
-				log_file.write(f"Key Question: {question}\n\n")
-				orchid_prompts, civbot_responses = orchid.eval_convo(log_file, question)
+		expert_grade = {lbl: "" for lbl in category_labels.get(cat_str, [])}
 
-			orchid.refresh_orchid()
-
-			results.append({
-				"_id": str(current_id).zfill(3),
-				"conversation": {
-					"prompts": orchid_prompts,
-					"responses": civbot_responses
-				},
-				"difficulty": level if pd.notna(level) else "",
-				"high_class": category if pd.notna(category) else "",
-				"sub_class": subcategory if pd.notna(subcategory) else "",
-				"Expert_grade": {
-					"Factual and Procedural Accuracy": "",
-					"Actionability": "",
-					"Contextual Relevance": "",
-					"Completeness": "",
-					"Clarity & Usability": "",
-					"Civic Responsibility": ""
-				}
-			})
-			current_id += 1
+		results.append({
+			"_id": str(current_id).zfill(3),
+			"conversation": {
+				"prompts": orchid_prompts,
+				"responses": civbot_responses
+			},
+			"difficulty": str(level).strip() if pd.notna(level) else "",
+			"high_class": cat_str,
+			"sub_class":  str(subcategory).strip() if pd.notna(subcategory) else "",
+			"Expert_grade": expert_grade,
+		})
+		current_id += 1
 
 	with open(output_path, "w", encoding="utf-8") as f:
 		json.dump(results, f, ensure_ascii=False, indent=2)
@@ -287,12 +310,19 @@ def run_benchmark(data_dir="eval/data", output_path="eval/data/civic_judge.json"
 if __name__ == "__main__":
 	import argparse
 	parser = argparse.ArgumentParser()
-	parser.add_argument("--mode", choices=["interactive", "benchmark"], default="interactive")
-	parser.add_argument("--data_dir", default="eval/data")
-	parser.add_argument("--output", default="eval/data/civic_judge.json")
+	parser.add_argument("--mode", choices=["interactive", "benchmark"], default="benchmark")
+	parser.add_argument("--data_dir",      default="eval/data")
+	parser.add_argument("--questions_csv", default="eval/data/civicbench_questions.xlsx - iteration 2.csv")
+	parser.add_argument("--rubric_csv",    default="eval/data/civicbench_rubrics.xlsx - Rubric Questions Full.csv")
+	parser.add_argument("--output",        default="eval/data/civic_judge2.json")
 	args = parser.parse_args()
 
 	if args.mode == "benchmark":
-		run_benchmark(data_dir=args.data_dir, output_path=args.output)
+		run_benchmark(
+			data_dir=args.data_dir,
+			questions_csv=args.questions_csv,
+			rubric_csv=args.rubric_csv,
+			output_path=args.output,
+		)
 	else:
 		main()
