@@ -233,7 +233,7 @@ def eval_pred(out_file, save_dir, rubric_data):
 
 def main():
 	safe_model = args.model.replace(':', '-')
-	save_dir = os.path.join(base_dir, "results", safe_model)
+	save_dir = os.path.join(base_dir, "results_sage", safe_model)
 	os.makedirs(save_dir, exist_ok=True)
 	print(args)
 

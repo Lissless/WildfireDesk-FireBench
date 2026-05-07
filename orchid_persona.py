@@ -264,6 +264,13 @@ def run_benchmark(
 	df = pd.read_csv(questions_csv)
 	df = df[df["Question"].notna() & (df["Question"].str.strip() != "")]
 
+	# 加载已有数据，用于保留 Expert_grade
+	existing_by_id = {}
+	if os.path.exists(output_path):
+		with open(output_path, "r", encoding="utf-8") as f:
+			existing_data = json.load(f)
+		existing_by_id = {entry["_id"]: entry for entry in existing_data}
+
 	results = []
 	current_id = 1
 
@@ -286,10 +293,14 @@ def run_benchmark(
 
 		orchid.refresh_orchid()
 
-		expert_grade = {lbl: "" for lbl in category_labels.get(cat_str, [])}
+		id_str = str(current_id).zfill(3)
+		if id_str in existing_by_id:
+			expert_grade = existing_by_id[id_str].get("Expert_grade", {})
+		else:
+			expert_grade = {lbl: "" for lbl in category_labels.get(cat_str, [])}
 
 		results.append({
-			"_id": str(current_id).zfill(3),
+			"_id": id_str,
 			"conversation": {
 				"prompts": orchid_prompts,
 				"responses": civbot_responses
@@ -299,10 +310,10 @@ def run_benchmark(
 			"sub_class":  str(subcategory).strip() if pd.notna(subcategory) else "",
 			"Expert_grade": expert_grade,
 		})
+		with open(output_path, "w", encoding="utf-8") as f:
+			json.dump(results, f, ensure_ascii=False, indent=2)
+		print(f"  -> saved {id_str} to {output_path}")
 		current_id += 1
-
-	with open(output_path, "w", encoding="utf-8") as f:
-		json.dump(results, f, ensure_ascii=False, indent=2)
 
 	print(f"\nDone！total {len(results)} elements, write to {output_path}")
 
@@ -314,7 +325,7 @@ if __name__ == "__main__":
 	parser.add_argument("--data_dir",      default="eval/data")
 	parser.add_argument("--questions_csv", default="eval/data/civicbench_questions.xlsx - iteration 2.csv")
 	parser.add_argument("--rubric_csv",    default="eval/data/civicbench_rubrics.xlsx - Rubric Questions Full.csv")
-	parser.add_argument("--output",        default="eval/data/civic_judge2.json")
+	parser.add_argument("--output",        default="eval/data/civic_judge.json")
 	args = parser.parse_args()
 
 	if args.mode == "benchmark":

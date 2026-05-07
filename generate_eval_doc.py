@@ -108,7 +108,6 @@ def add_horizontal_rule(doc):
 
 
 def build_rubric_data(csv_path):
-	"""从CSV读取rubric数据，返回 Category -> [行字典列表] 的映射，自动处理重复Label。"""
 	category_rows = {}
 
 	with open(csv_path, encoding='utf-8') as f:
@@ -127,7 +126,6 @@ def build_rubric_data(csv_path):
 				'Points': row['Points'].strip(),
 			})
 
-	# 检测重复Label并添加数字后缀，与civic_judge.json的key保持一致
 	for cat, rows in category_rows.items():
 		labels = [r['Label'] for r in rows]
 		counts = Counter(labels)
@@ -142,15 +140,12 @@ def build_rubric_data(csv_path):
 
 
 def add_rubric_table(doc, rubric_rows):
-	"""添加6列rubric评分表格：Label, Element, Description, Why it matters, Max Points, Your Points。"""
 	col_headers = ['Label', 'Element', 'Description', 'Why it matters', 'Max Points', 'Your Points']
-	# 总可用宽度约6.1英寸（8.5 - 1.2*2）
 	col_widths = [Inches(0.9), Inches(1.4), Inches(1.6), Inches(1.2), Inches(0.5), Inches(0.5)]
 
 	table = doc.add_table(rows=1, cols=6)
 	table.style = "Table Grid"
 
-	# 表头行
 	hdr = table.rows[0].cells
 	for i, header in enumerate(col_headers):
 		hdr[i].text = header
@@ -160,7 +155,6 @@ def add_rubric_table(doc, rubric_rows):
 				run.font.size = Pt(9)
 		set_cell_bg(hdr[i], "D9E1F2")
 
-	# 数据行
 	for row_data in rubric_rows:
 		row = table.add_row().cells
 		row[0].text = row_data['Label']
@@ -174,7 +168,6 @@ def add_rubric_table(doc, rubric_rows):
 				for run in para.runs:
 					run.font.size = Pt(9)
 
-	# 设置列宽
 	for row in table.rows:
 		for i, width in enumerate(col_widths):
 			row.cells[i].width = width
@@ -251,10 +244,9 @@ def generate_doc(json_path="eval/data/civic_judge.json",
 		add_label_paragraph(doc, "Expert Grading", font_size=11, color="7B2C2C")
 		doc.add_paragraph()
 
-		# 根据high_class查找对应rubric行，找不到时打印警告
 		rubric_rows = rubric_data.get(high_class)
 		if rubric_rows is None:
-			print(f"警告：未找到Category '{high_class}' 对应的rubric（id={_id}）")
+			print(f"No Category '{high_class}' rubric（id={_id}）")
 			rubric_rows = []
 		add_rubric_table(doc, rubric_rows)
 
@@ -263,9 +255,9 @@ def generate_doc(json_path="eval/data/civic_judge.json",
 
 
 if __name__ == "__main__":
-	parser = argparse.ArgumentParser(description="生成civic评测Word文档")
-	parser.add_argument("--input", default="eval/data/civic_judge.json", help="JSON路径")
-	parser.add_argument("--rubric", default="eval/data/civicbench_rubrics.xlsx - Rubric Questions Full.csv", help="Rubric CSV路径")
-	parser.add_argument("--output", default="eval/data/civic_expert_eval.docx", help="Word输出路径")
+	parser = argparse.ArgumentParser(description="generate doc")
+	parser.add_argument("--input", default="eval/data/civic_judge.json", help="JSON path")
+	parser.add_argument("--rubric", default="eval/data/civicbench_rubrics.xlsx - Rubric Questions Full.csv", help="Rubric CSV path")
+	parser.add_argument("--output", default="eval/data/civic_expert_eval.docx", help="Word path")
 	args = parser.parse_args()
 	generate_doc(json_path=args.input, csv_path=args.rubric, output_path=args.output)
