@@ -42,6 +42,8 @@ class Sage(CivicChatbot):
     sage_rag_k = 5
     sage_intro_session_id = "sage_intro_" + str(timestamp)
 
+    def __init__(self, setup=True):
+        self.setup_sage(setup)
 
     ### ----------------------------------------------------------------------------------------------------
     ### Core Chat Functions
