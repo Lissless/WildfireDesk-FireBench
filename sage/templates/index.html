@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- page metadata -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WildfireDesk</title>
+
+  <!-- external stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+  <!-- font import -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <div class="app-shell">
+
+    <!-- ================================================== -->
+    <!-- left sidebar -->
+    <!-- ================================================== -->
+    <aside class="sidebar">
+
+      <div class="sidebar-brand">
+        <h1>WildfireDesk</h1>
+      </div>
+
+      <div class="sidebar-card">
+        <h2>About Sage</h2>
+        <p>
+          Sage’s mission is to support wildfire recovery by helping people take informed action and work together with their communities to rebuild and move forward.
+        </p>
+
+        <p style="margin-top: 10px;">
+          It is a <strong>non-partisan, non-commercial</strong> AI assistant focused on practical guidance and community-driven solutions.
+        </p>
+      </div>
+
+      <div class="sidebar-card">
+        <h2>How Sage Can Help</h2>
+
+        <p>
+          Sage is a civically minded chatbot that helps you understand your options and take practical steps after a wildfire. It supports both individual decisions and community efforts so you can move forward with clarity.
+        </p>
+
+        <button class="expand-toggle" type="button" onclick="togglePrivacy(this)">
+          See more <span class="arrow">▾</span>
+        </button>
+
+        <div class="expand-content">
+          <ul class="sidebar-list">
+            <li>Understand your options for FEMA, insurance, and recovery</li>
+            <li>Plan next steps for housing, rebuilding, and navigating systems</li>
+            <li>Organize with neighbors and coordinate community efforts</li>
+            <li>Create materials like meeting agendas, outreach messages, and action plans</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="sidebar-card">
+        <h2>Privacy</h2>
+        <p>
+          Your privacy matters. Sage is designed to support you without storing personal information.
+        </p>
+
+        <button class="expand-toggle" type="button" onclick="togglePrivacy(this)">
+          See more <span class="arrow">▾</span>
+        </button>
+
+        <div class="expand-content">
+          <ul class="sidebar-list">
+            <li>We do not store your personal data or chat history.</li>
+            <li>Your messages are only used to generate responses during this session.</li>
+            <li>Conversations are not saved, shared, or used for training.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="sidebar-alert">
+        If you are in immediate danger, call 911.
+      </div>
+    </aside>
+
+    <!-- sidebar collapse button -->
+    <button id="sidebar-toggle" class="sidebar-toggle" type="button">‹</button>
+
+    <!-- ================================================== -->
+    <!-- main chat area -->
+    <!-- ================================================== -->
+    <main class="app">
+      <div class="header">
+        <div class="chat-title-row">
+          <div>
+            <h2>Sage</h2>
+            <p>Ask Sage about wildfire recovery, next steps, or community action.</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="chat" class="chat-container">
+        <div class="message sage loading" id="intro-message">Loading Sage...</div>
+      </div>
+
+      <div class="input-area">
+        <textarea id="user-input" rows="2" placeholder="Ask Sage a question..."></textarea>
+        <button id="send-button">Send</button>
+      </div>
+    </main>
+
+    <!-- ================================================== -->
+    <!-- right settings sidebar -->
+    <!-- ================================================== -->
+    <aside class="settings-sidebar">
+      <div class="how-it-works-card">
+        <button id="how-it-works-btn" class="how-it-works-row" type="button">
+          <span class="how-text">How Sage works</span>
+          <span class="help-icon">?</span>
+        </button>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-header">
+          <h2>Settings</h2>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-label-row">
+            <span class="settings-label">Response mode</span>
+
+            <div class="info-tooltip">
+              <button class="info-button" type="button" aria-label="More information">
+                i
+              </button>
+              <div class="tooltip-box">
+                Expert-informed mode uses curated expert resources to provide more specific, evidence-based guidance.
+                  For a more general approach without those materials, use General.
+              </div>
+            </div>
+          </div>
+
+          <label class="mode-option">
+            <input type="radio" name="sage-mode" value="grounded" checked>
+            Expert-informed
+          </label>
+
+          <label class="mode-option">
+            <input type="radio" name="sage-mode" value="general">
+            General response
+          </label>
+        </div>
+
+        <div class="settings-divider"></div>
+
+        <div class="settings-section">
+          <div class="settings-label-row">
+            <span class="settings-label">Use local news</span>
+              <div class="info-tooltip">
+                <button class="info-button" type="button" aria-label="More information">
+                  i
+                </button>
+                <div class="tooltip-box">
+                  Local news mode uses recent local reporting to make answers more relevant to your selected state or community.
+                  For a more general answer without location-specific context, turn it off.              
+                </div>
+            </div>
+          </div>
+
+          <label class="toggle-row" for="local-news-toggle">
+            <span class="toggle-text">Include local news context</span>
+            <input type="checkbox" id="local-news-toggle">
+          </label>
+        </div>
+
+        <div id="local-news-options">
+          <div class="settings-divider"></div>
+          <div class="settings-section">
+            <label class="settings-label" for="state-select">State</label>
+            <select id="state-select" class="settings-select">
+              <option value="">Select a state</option>
+              {% for state in state_community_map.keys()|sort %}
+                <option value="{{ state }}">{{ state }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="settings-divider"></div>
+
+          <div class="settings-section">
+            <label class="settings-label" for="community-select">Community</label>
+            <select id="community-select" class="settings-select">
+              <option value="">All communities</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+
+<!-- ================================================== -->
+<!-- welcome modal -->
+<!-- ================================================== -->
+  <div id="welcome-modal" class="welcome-modal hidden">
+    <div class="welcome-card">
+      <button id="welcome-close" class="welcome-close" type="button">×</button>
+
+      <!-- ================= SLIDE 1 ================= -->
+      <div class="welcome-slide active">
+        <div class="welcome-progress">
+          <span class="dot active"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+        </div>
+
+        <h2>Welcome to Sage</h2>
+
+        <p class="welcome-lead">
+          Sage is a civically minded chatbot that helps you think through wildfire recovery, rebuilding, insurance, housing, and community action.
+        </p>
+
+        <div class="welcome-soft-box">
+          <h3>How to use Sage</h3>
+          <ol>
+            <li>Start with a suggested question, or type something on your mind.</li>
+            <li>Answer any follow-up questions so Sage understands your situation.</li>
+            <li>Use the response to plan next steps, compare options, or draft materials.</li>
+          </ol>
+        </div>
+
+        <div class="welcome-example">
+          Try: “Help me draft an outreach message for a community meeting.”
+        </div>
+      </div>
+
+      <!-- ================= SLIDE 2 ================= -->
+      <div class="welcome-slide">
+        <div class="welcome-progress">
+          <span class="dot"></span>
+          <span class="dot active"></span>
+          <span class="dot"></span>
+        </div>
+
+        <h2>Response mode</h2>
+
+        <p class="welcome-lead">
+          Response mode controls what kind of information Sage uses when answering.
+        </p>
+
+        <img src="{{ url_for('static', filename='response-mode.png') }}"
+            alt="Response mode setting"
+            class="welcome-image">
+
+        <div class="welcome-soft-box">
+          <h3>How to choose</h3>
+          <ul>
+            <li><strong>Expert-informed:</strong> uses curated research and expert resources to provide more grounded, evidence-based guidance.</li>
+            <li><strong>General response:</strong> generates flexible, general-purpose answers that are useful for brainstorming, drafting, or exploring ideas.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ================= SLIDE 3 ================= -->
+      <div class="welcome-slide">
+        <div class="welcome-progress">
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span class="dot active"></span>
+        </div>
+
+        <h2>Local news context</h2>
+
+        <p class="welcome-lead">
+          Local news helps Sage tailor answers to what’s happening in your area.
+        </p>
+
+        <img src="{{ url_for('static', filename='local-news.png') }}"
+            alt="Local news setting"
+            class="welcome-image">
+
+        <div class="welcome-soft-box">
+          <h3>How to use it</h3>
+          <ol>
+            <li>Turn on “Include local news context.”</li>
+            <li>Select a state.</li>
+            <li>Choose a community, or leave it as “All communities.”</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ================= CONTROLS ================= -->
+      <div class="welcome-controls">
+        <button id="welcome-back" class="welcome-secondary">Back</button>
+        <button id="welcome-next" class="welcome-start">Next</button>
+      </div>
+
+    </div>
+
+  </div>
+
+<!-- ================================================== -->
+<!-- about button and modal -->
+<!-- ================================================== -->
+  <button id="about-btn" class="about-button" type="button">About</button>
+
+  <div id="about-modal" class="welcome-modal hidden">
+    <div class="welcome-card">
+      <button id="about-close" class="welcome-close" type="button" aria-label="Close">×</button>
+
+      <h2>About this project</h2>
+
+      <div class="about-tabs" role="tablist">
+        <button id="about-tab-authors" class="about-tab active" type="button" role="tab" aria-selected="true" aria-controls="about-panel-authors" data-about-tab="authors">Authors</button>
+        <button id="about-tab-civicbench" class="about-tab" type="button" role="tab" aria-selected="false" aria-controls="about-panel-civicbench" data-about-tab="civicbench">CivicBench</button>
+      </div>
+
+      <!-- ================= AUTHORS TAB ================= -->
+      <section id="about-panel-authors" class="about-panel active" role="tabpanel" aria-labelledby="about-tab-authors">
+        <p class="about-meta">CS 150: Generative AI for Social Impact · Tufts University · Spring 2026</p>
+        <p class="about-meta"><strong>Authors:</strong> Miriam Shamash, Alisalee Aaron, Ning Ni</p>
+
+        <p class="welcome-lead">
+          This project brought together our civic interests and our computer science backgrounds, and we had a great time building it. Sage was one of two projects we built as a team. The second was the <button class="about-link" type="button" data-about-tab="civicbench">Civic AI benchmark</button>, which we designed to evaluate Sage and other civic AI systems.
+        </p>
+
+        <p class="welcome-lead">
+          We are grateful to Peter Levine for helping us understand critical civic studies viewpoints and for generously dedicating his time to guide us, and to Professor Fahad Dogar for advising the technical implementation of the project and for making this all happen.
+        </p>
+
+        <div class="about-contact">
+          <p class="about-meta">To contact us:</p>
+          <p class="about-meta">Miriam Shamash - miriam.shamash@gmail.com</p>
+          <p class="about-meta">Alisalee Aaron</p>
+          <p class="about-meta">Ning Ni - coming soon!</p>
+        </div>
+      </section>
+
+      <!-- ================= CIVICBENCH TAB ================= -->
+      <section id="about-panel-civicbench" class="about-panel" role="tabpanel" aria-labelledby="about-tab-civicbench">
+        <h3 class="about-panel-title">CivicBench: a Civic AI benchmark</h3>
+
+        <p class="welcome-lead">
+          CivicBench checks whether an AI system gives civic guidance that is accurate, actionable, and context-aware. It was built to evaluate Sage and is designed so other civic AI systems can be tested the same way.
+        </p>
+
+        <div class="welcome-soft-box">
+          <h3>What it covers</h3>
+          <ul>
+            <li>Seven civic categories, from civic knowledge and information access to formal participation, organizing, community problem-solving, and relationships and trust.</li>
+            <li>140 scenario-based questions, four for each of 35 subcategories.</li>
+            <li>Rubrics that score each response by category and difficulty, so results show where a system is strong or weak.</li>
+          </ul>
+        </div>
+
+        <div class="welcome-soft-box">
+          <h3>How it scores</h3>
+          <ul>
+            <li><strong>LLM as a jury:</strong> several LLM judges score each response against the same rubric, so no single judge decides the result.</li>
+            <li><strong>Simulated user:</strong> Orchid, a persona agent, asks follow-up questions for up to five turns, so bots that need a conversation are tested fairly.</li>
+            <li><strong>Baseline:</strong> a simpler “raw bot” gives a comparison point for the components that make Sage different.</li>
+          </ul>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+  <!-- external script -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <script>
+    /* ================================================== */
+    /* dom references and startup data */
+    /* ================================================== */
+
+    const chat = document.getElementById("chat");
+    const userInput = document.getElementById("user-input");
+    const sendButton = document.getElementById("send-button");
+    const introMessage = document.getElementById("intro-message");
+    const appShell = document.querySelector(".app-shell");
+    const sidebarToggle = document.getElementById("sidebar-toggle");
+    const localNewsToggle = document.getElementById("local-news-toggle");
+    const stateSelect = document.getElementById("state-select");
+    const communitySelect = document.getElementById("community-select");
+    const stateCommunityMap = {{ state_community_map_json | safe }};
+    const howItWorksBtn = document.getElementById("how-it-works-btn");
+
+    const starterQuestions = [
+       "I just got evacuated. What should I do in the next 24 hours?",
+       "My home was damaged. What steps should I take for insurance and financial help?",
+       "How can we organize as a community to support people affected by the wildfire?",
+       "We want to host a community meeting after the wildfire. What should we plan for?"
+      ];
+
+    /* ================================================== */
+    /* sidebar ui */
+    /* ================================================== */
+
+    sidebarToggle.addEventListener("click", () => {
+      const collapsed = appShell.classList.toggle("sidebar-collapsed");
+      sidebarToggle.textContent = collapsed ? "›" : "‹";
+    });
+
+    function togglePrivacy(button) {
+      const content = button.parentElement.querySelector(".expand-content");
+      const isOpen = content.classList.contains("open");
+
+      if (isOpen) {
+        content.classList.remove("open");
+        button.innerHTML = 'See more <span class="arrow">▾</span>';
+      } else {
+        content.classList.add("open");
+        button.innerHTML = 'See less <span class="arrow">▴</span>';
+      }
+    }
+
+    /* ================================================== */
+    /* community dropdown */
+    /* ================================================== */
+
+    function populateCommunityOptions(selectedState) {
+      communitySelect.innerHTML = "";
+
+      const defaultOption = document.createElement("option");
+      defaultOption.value = "";
+      defaultOption.textContent = "All communities";
+      communitySelect.appendChild(defaultOption);
+
+      if (!selectedState || !stateCommunityMap[selectedState]) {
+        return;
+      }
+
+      stateCommunityMap[selectedState].forEach((community) => {
+        const option = document.createElement("option");
+        option.value = community;
+        option.textContent = community;
+        communitySelect.appendChild(option);
+      });
+    }
+
+    stateSelect.addEventListener("change", () => {
+      populateCommunityOptions(stateSelect.value);
+    });
+
+    /* ================================================== */
+    /* input and download helpers */
+    /* ================================================== */
+
+    function downloadWordDoc(filename, htmlContent) {
+      const fullHtml = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office"
+              xmlns:w="urn:schemas-microsoft-com:office:word"
+              xmlns="http://www.w3.org/TR/REC-html40">
+          <head>
+            <meta charset="utf-8">
+            <title>${filename}</title>
+          </head>
+          <body>
+            ${htmlContent}
+          </body>
+        </html>
+      `;
+
+      const blob = new Blob(['\ufeff', fullHtml], { type: 'application/msword' });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      URL.revokeObjectURL(url);
+    }
+
+    function autoResizeTextarea(textarea) {
+      textarea.style.height = "auto";
+      const maxHeight = window.innerHeight * 0.7;
+      textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + "px";
+    }
+
+    userInput.addEventListener("input", () => {
+      userInput.style.height = "auto";
+      userInput.style.height = userInput.scrollHeight + "px";
+    });
+
+    /* ================================================== */
+    /* source and link formatting */
+    /* ================================================== */
+
+    function linkifyText(text) {
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+
+      return text.replace(urlRegex, function(url) {
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+      });
+    }
+
+    function formatSources(sources) {
+      if (typeof sources !== "string") {
+        return `<p>${JSON.stringify(sources, null, 2)}</p>`;
+      }
+
+      const text = sources.trim();
+
+      if (text.includes("<")) {
+        return sources;
+      }
+
+      const firstCitationMatch = text.match(/(?:^|\n)\s*1[\).\s]/);
+
+      let introText = "";
+      let citationsText = text;
+
+      if (firstCitationMatch && firstCitationMatch.index > 0) {
+        introText = text.slice(0, firstCitationMatch.index).trim();
+        citationsText = text.slice(firstCitationMatch.index).trim();
+      }
+
+      const citationBlocks = citationsText
+        .split(/\n(?=\s*\d+[\).\s])/)
+        .map(block => block.trim())
+        .filter(block => /^\d+[\).\s]/.test(block));
+
+      if (citationBlocks.length === 0) {
+        return marked.parse(sources);
+      }
+
+      const introHtml = introText
+        ? `<p>${introText.replace(/\n/g, "<br>")}</p>`
+        : "";
+
+      const citationsHtml = citationBlocks.map((block, index) => {
+        const cleaned = linkifyText(
+          block.replace(/^\d+[\).\s]+/, "").trim()
+        );
+
+        return `
+          <div class="source-item">
+            <div class="source-number">${index + 1}</div>
+            <div class="source-body">
+              <div class="source-text">${cleaned}</div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      return `
+        ${introHtml}
+        <div class="sources-card">
+          <div class="sources-heading">SOURCES</div>
+          ${citationsHtml}
+        </div>
+      `;
+    }
+
+    /* ================================================== */
+    /* message rendering */
+    /* ================================================== */
+
+    function addMessage(text, sender, sources = null, showActions = true, followups = []) {
+      const wrapper = document.createElement("div");
+      wrapper.className = `message-wrapper ${sender}`;
+
+      const bubble = document.createElement("div");
+      bubble.className = `message ${sender}`;
+
+      const contentDiv = document.createElement("div");
+      contentDiv.className = "message-content";
+      contentDiv.innerHTML = marked.parse(text);
+      bubble.appendChild(contentDiv);
+
+      let sourcesDiv = null;
+
+      if (sender === "sage" && showActions) {
+        const actions = document.createElement("div");
+        actions.className = "message-actions";
+
+        const copyBtn = document.createElement("button");
+        copyBtn.className = "action-button";
+        copyBtn.textContent = "Copy";
+
+        const editBtn = document.createElement("button");
+        editBtn.className = "action-button";
+        editBtn.textContent = "Edit";
+
+        const downloadBtn = document.createElement("button");
+        downloadBtn.className = "action-button";
+        downloadBtn.textContent = "Download";
+
+        let isEditing = false;
+        let textarea = null;
+        let originalText = text;
+
+        copyBtn.onclick = async () => {
+          await navigator.clipboard.writeText(contentDiv.innerText);
+          copyBtn.textContent = "Copied";
+          setTimeout(() => {
+            copyBtn.textContent = "Copy";
+          }, 1500);
+        };
+
+        editBtn.onclick = () => {
+          if (!isEditing) {
+            isEditing = true;
+
+            textarea = document.createElement("textarea");
+            textarea.className = "message-editor";
+            textarea.value = originalText;
+
+            bubble.replaceChild(textarea, contentDiv);
+            bubble.classList.add("editing");
+
+            editBtn.textContent = "Save";
+
+            requestAnimationFrame(() => {
+              autoResizeTextarea(textarea);
+              textarea.focus();
+              textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+            });
+
+            textarea.addEventListener("input", () => autoResizeTextarea(textarea));
+
+            let cancelBtn = actions.querySelector('[data-role="cancel"]');
+
+            if (!cancelBtn) {
+              cancelBtn = document.createElement("button");
+              cancelBtn.className = "action-button cancel-button";
+              cancelBtn.textContent = "Cancel";
+              cancelBtn.dataset.role = "cancel";
+
+              cancelBtn.onclick = () => {
+                isEditing = false;
+                contentDiv.innerHTML = marked.parse(originalText);
+                bubble.replaceChild(contentDiv, textarea);
+                bubble.classList.remove("editing");
+                editBtn.textContent = "Edit";
+                cancelBtn.remove();
+              };
+
+              actions.appendChild(cancelBtn);
+            }
+
+          } else {
+            isEditing = false;
+
+            originalText = textarea.value;
+            contentDiv.innerHTML = marked.parse(originalText);
+
+            bubble.replaceChild(contentDiv, textarea);
+            bubble.classList.remove("editing");
+            editBtn.textContent = "Edit";
+
+            const cancelBtn = actions.querySelector('[data-role="cancel"]');
+            if (cancelBtn) cancelBtn.remove();
+          }
+        };
+
+        downloadBtn.onclick = () => {
+          const temp = document.createElement("div");
+          temp.innerHTML = contentDiv.innerHTML;
+
+          if (sourcesDiv) {
+            temp.appendChild(document.createElement("hr"));
+            temp.appendChild(sourcesDiv.cloneNode(true));
+          }
+
+          downloadWordDoc("sage-response.doc", temp.innerHTML);
+        };
+
+        actions.appendChild(copyBtn);
+        actions.appendChild(editBtn);
+        actions.appendChild(downloadBtn);
+        bubble.appendChild(actions);
+      }
+
+      wrapper.appendChild(bubble);
+
+      if (sources) {
+        const citationsArea = document.createElement("div");
+        citationsArea.className = "citations-area";
+
+        const sourcesToggle = document.createElement("button");
+        sourcesToggle.className = "sources-toggle";
+        sourcesToggle.type = "button";
+        sourcesToggle.innerHTML = 'Where did this information come from? <span class="sources-arrow">▾</span>';
+
+        sourcesDiv = document.createElement("div");
+        sourcesDiv.className = "sources collapsible-sources";
+        sourcesDiv.innerHTML = formatSources(sources);
+
+        sourcesToggle.addEventListener("click", () => {
+          const isOpen = sourcesDiv.classList.contains("open");
+          const arrow = sourcesToggle.querySelector(".sources-arrow");
+
+          if (isOpen) {
+            sourcesDiv.classList.remove("open");
+            arrow.textContent = "▾";
+          } else {
+            sourcesDiv.classList.add("open");
+            arrow.textContent = "▴";
+
+            requestAnimationFrame(() => {
+              sourcesDiv.scrollIntoView({ behavior: "smooth", block: "end" });
+            });
+          }
+        });
+
+        citationsArea.appendChild(sourcesToggle);
+        citationsArea.appendChild(sourcesDiv);
+        wrapper.appendChild(citationsArea);
+      }
+
+      if (sender === "sage" && followups.length > 0) {
+        addFollowupQuestions(wrapper, followups);
+      }
+
+      chat.appendChild(wrapper);
+
+      if (sender !== "sage") {
+        chat.scrollTop = chat.scrollHeight;
+      }
+
+      return wrapper;
+    }
+
+    /* ================================================== */
+    /* starter and follow-up question buttons */
+    /* ================================================== */
+
+    function addStarterQuestions() {
+      const wrapper = document.createElement("div");
+      wrapper.className = "starter-questions";
+      wrapper.id = "starter-questions";
+
+      const label = document.createElement("div");
+      label.className = "starter-label";
+      label.textContent = "You can start by asking:";
+      wrapper.appendChild(label);
+
+      starterQuestions.forEach((question) => {
+        const button = document.createElement("button");
+        button.className = "starter-question-button";
+        button.type = "button";
+        button.textContent = question;
+
+        button.addEventListener("click", () => {
+          userInput.value = question;
+
+          const starterBlock = document.getElementById("starter-questions");
+          if (starterBlock) {
+            starterBlock.remove();
+          }
+
+          sendMessage();
+        });
+
+        wrapper.appendChild(button);
+      });
+
+      chat.appendChild(wrapper);
+    }
+
+    function addFollowupQuestions(parentWrapper, questions) {
+      if (!questions || questions.length === 0) return;
+
+      const wrapper = document.createElement("div");
+      wrapper.className = "starter-questions followup-questions";
+
+      const label = document.createElement("div");
+      label.className = "starter-label";
+      label.textContent = "You might be thinking...";
+      wrapper.appendChild(label);
+
+      questions.slice(0, 2).forEach((question) => {
+        const button = document.createElement("button");
+        button.className = "starter-question-button";
+        button.type = "button";
+        button.textContent = question;
+
+        button.addEventListener("click", () => {
+          userInput.value = question;
+          userInput.style.height = "auto";
+          userInput.style.height = userInput.scrollHeight + "px";
+
+          wrapper.remove();
+
+          sendMessage();
+        });
+
+        wrapper.appendChild(button);
+      });
+
+      parentWrapper.appendChild(wrapper);
+    }
+
+    function clearSuggestedQuestions() {
+      const starterBlock = document.getElementById("starter-questions");
+      if (starterBlock) {
+        starterBlock.remove();
+      }
+
+      const followupBlocks = document.querySelectorAll(".followup-questions");
+      followupBlocks.forEach((block) => block.remove());
+    }
+
+    /* ================================================== */
+    /* api calls */
+    /* ================================================== */
+
+    async function loadIntro() {
+      try {
+        const response = await fetch("/intro");
+        const data = await response.json();
+
+        introMessage.remove();
+        addMessage(data.intro, "sage", null, false);
+        addStarterQuestions();
+      } catch (error) {
+        console.error("intro failed:", error);
+        introMessage.textContent = "Could not load Sage.";
+      }
+    }
+
+    // send the user's message to the backend and show sage's response
+    async function sendMessage() {
+      const message = userInput.value.trim();
+      if (!message) return;
+
+      clearSuggestedQuestions();
+
+      const selectedMode = document.querySelector('input[name="sage-mode"]:checked').value;
+
+      addMessage(message, "user");
+      userInput.value = "";
+      userInput.style.height = "auto";
+
+      const loadingWrapper = document.createElement("div");
+      loadingWrapper.className = "message-wrapper sage";
+
+      const loading = document.createElement("div");
+      loading.className = "message sage loading";
+
+      const loadingText = localNewsToggle.checked
+        ? "Sage is searching local news (this may take a moment)"
+        : "Sage is thinking";
+
+      loading.innerHTML = `
+        <span class="loading-text">${loadingText}</span>
+        <span class="loading-dots">
+          <span>.</span><span>.</span><span>.</span>
+        </span>
+      `;
+
+      loadingWrapper.appendChild(loading);
+      chat.appendChild(loadingWrapper);
+      chat.scrollTop = chat.scrollHeight;
+
+      try {
+        const response = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message,
+            mode: selectedMode,
+            use_local_news: localNewsToggle.checked,
+            selected_state: stateSelect.value,
+            selected_community: communitySelect.value
+          })
+        });
+
+        const rawData = await response.json();
+        console.log("chat response:", rawData);
+
+        const data = rawData[1];
+
+        loadingWrapper.remove();
+
+        if (data.error) {
+          addMessage(data.error, "sage");
+          return;
+        }
+
+        const messageWrapper = addMessage(
+          data.answer,
+          "sage",
+          data.sources,
+          true,
+          data.followups || []
+        );
+
+        requestAnimationFrame(() => {
+          messageWrapper.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+
+      } catch (error) {
+        console.error("chat failed:", error);
+        loadingWrapper.remove();
+        addMessage("Something went wrong while contacting Sage.", "sage");
+      }
+    }
+
+  /**************************************************/
+  /* welcome modal */
+  /**************************************************/
+
+  const welcomeModal = document.getElementById("welcome-modal");
+  const welcomeClose = document.getElementById("welcome-close");
+  const welcomeStart = document.getElementById("welcome-start");
+
+  // show modal only the first time this browser loads the page
+  function maybeShowWelcomeModal() {
+    welcomeModal.classList.remove("hidden");
+  }
+
+  // close modal and remember choice
+  function closeWelcomeModal() {
+    welcomeModal.classList.add("hidden");
+    localStorage.setItem("sageWelcomeSeen", "true");
+  }
+
+    /* ================================================== */
+    /* welcome modal (multi-slide) */
+    /* ================================================== */
+
+    const welcomeSlides = document.querySelectorAll(".welcome-slide");
+    const welcomeBack = document.getElementById("welcome-back");
+    const welcomeNext = document.getElementById("welcome-next");
+
+    let welcomeSlideIndex = 0;
+
+    function showSlide(index) {
+      welcomeSlides.forEach((slide, i) => {
+        slide.classList.toggle("active", i === index);
+      });
+
+      welcomeBack.style.visibility = index === 0 ? "hidden" : "visible";
+      welcomeNext.textContent = index === welcomeSlides.length - 1 ? "Got it" : "Next";
+    }
+
+    function maybeShowWelcomeModal() {
+      welcomeSlideIndex = 0;
+      showSlide(welcomeSlideIndex);
+      welcomeModal.classList.remove("hidden");
+    }
+
+    function closeWelcomeModal() {
+      welcomeModal.classList.add("hidden");
+      localStorage.setItem("sageWelcomeSeen", "true");
+    }
+
+    howItWorksBtn.addEventListener("click", () => {
+      welcomeSlideIndex = 0;
+      showSlide(welcomeSlideIndex);
+      welcomeModal.classList.remove("hidden");
+    });
+
+    welcomeClose.addEventListener("click", closeWelcomeModal);
+
+    welcomeNext.addEventListener("click", () => {
+      if (welcomeSlideIndex < welcomeSlides.length - 1) {
+        welcomeSlideIndex++;
+        showSlide(welcomeSlideIndex);
+      } else {
+        closeWelcomeModal();
+      }
+    });
+
+    welcomeBack.addEventListener("click", () => {
+      if (welcomeSlideIndex > 0) {
+        welcomeSlideIndex--;
+        showSlide(welcomeSlideIndex);
+      }
+    });
+    /* ================================================== */
+    /* about modal */
+    /* ================================================== */
+
+    const aboutBtn = document.getElementById("about-btn");
+    const aboutModal = document.getElementById("about-modal");
+    const aboutClose = document.getElementById("about-close");
+
+    // switch between the Authors and CivicBench tabs
+    function showAboutTab(name) {
+      document.querySelectorAll(".about-tab").forEach((tab) => {
+        const selected = tab.dataset.aboutTab === name;
+        tab.classList.toggle("active", selected);
+        tab.setAttribute("aria-selected", selected);
+      });
+
+      document.querySelectorAll(".about-panel").forEach((panel) => {
+        panel.classList.toggle("active", panel.id === "about-panel-" + name);
+      });
+    }
+
+    document.querySelectorAll(".about-tab, .about-link").forEach((el) => {
+      el.addEventListener("click", () => showAboutTab(el.dataset.aboutTab));
+    });
+
+    aboutBtn.addEventListener("click", () => {
+      showAboutTab("authors");
+      aboutModal.classList.remove("hidden");
+    });
+
+    aboutClose.addEventListener("click", () => {
+      aboutModal.classList.add("hidden");
+    });
+
+    // clicking the dimmed backdrop also closes the about modal
+    aboutModal.addEventListener("click", (e) => {
+      if (e.target === aboutModal) {
+        aboutModal.classList.add("hidden");
+      }
+    });
+
+    /* ================================================== */
+    /* app event listeners and startup */
+    /* ================================================== */
+    function toggleLocalNewsOptions() {
+      const container = document.getElementById("local-news-options");
+
+      if (localNewsToggle.checked) {
+        container.style.display = "block";
+      } else {
+        container.style.display = "none";
+      }
+    }
+
+    localNewsToggle.addEventListener("change", toggleLocalNewsOptions);
+
+    sendButton.addEventListener("click", sendMessage);
+
+    userInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    // load intro message when page opens
+    loadIntro();
+    maybeShowWelcomeModal();
+    toggleLocalNewsOptions();
+  </script>
+</body>
+</html>
