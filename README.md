@@ -7,7 +7,6 @@ This repository holds two related projects and the code they share:
 | [`sage/`](sage/README.md) | **Sage**, a civic helpdesk for wildfire recovery. Runs as a web app or a command-line chatbot. | [sage/README.md](sage/README.md) |
 | [`civicbench/`](civicbench/README.md) | **CivicBench**, a benchmark for evaluating civic AI systems. Includes LLM judges, the Orchid simulated user, and report generation. | [civicbench/README.md](civicbench/README.md) |
 | [`shared/`](shared/README.md) | Code both projects use: the LLM proxy client (`llmproxy`) and the chatbot interface (`civic_chatbot.py`). Nothing to install, since both projects find it automatically. | [shared/README.md](shared/README.md) |
-| `archive/` | Files that appear unused. Nothing in the code reads them. Kept until the team decides what to delete. | [archive/README.md](archive/README.md) |
 
 ## Prerequisites
 
@@ -59,10 +58,3 @@ Each `.env` needs `LLMPROXY_API_KEY` and `LLMPROXY_ENDPOINT`. Get both from the 
 - **Run each project's commands from that project's folder.** For example, `cd sage` before `python app.py`. The `.env` file is read from the folder you run in.
 - **Keep `.env` files out of git.** They hold API keys. The `.gitignore` already excludes them, and `.env.example` is the template that is committed.
 - **Use the project READMEs for day-to-day work.** This page only covers setup and layout.
-
-## Open items before handoff
-
-- **Owners:** no one is named yet to own, maintain, or support the project.
-- **Hosting:** Sage runs locally only. No hosting is set up.
-- **Discord bot token:** an old file in the git history contains a Discord bot token. Rotate it, because deleting the file doesn't remove it from history.
-- **Dependencies:** the direct dependencies are pinned. As of 2026-10-31, every pinned version was at least 7 days old and PyPI listed no known advisories for any of them. Dependencies of those packages are not pinned.
