@@ -5,6 +5,7 @@ from pathlib import Path
 CIVICBENCH_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(CIVICBENCH_DIR))
 sys.path.insert(0, str(CIVICBENCH_DIR.parent / "sage"))  # Sage lives in ../sage
+sys.path.insert(0, str(CIVICBENCH_DIR.parent / "shared"))  # LLM client and chatbot interface
 
 from llmproxy import LLMProxy
 import os, json

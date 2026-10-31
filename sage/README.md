@@ -46,7 +46,7 @@ Type a question at the prompt and type `quit` to exit. Each session writes a `lo
 | `resources/wildfire-resources/` | RAG documents on wildfire recovery, such as FEMA, insurance, and mitigation guides. Uploaded at startup. |
 | `resources/ivy/state-local-news-outlets/` | One file per state listing local news outlets. Read by Ivy. |
 | `resources/ivy/web-crawl-data/` | Cached crawl results from Ivy. Generated while the app runs. Mostly git-ignored. |
-| `data-prep/` | Scripts and source files used to build the resource files, plus `healthy-democracy-states/`: per-state lists of civic organizations built from the Healthy Democracy links page. Nothing in the app reads these. |
+| `data-prep/` | Scripts and source files used to build the resource files, plus `healthy-democracy-states/`: per-state lists of civic organizations built from the Healthy Democracy links page. Nothing in the app reads these. To rebuild, run `python categorize.py` or `python local-news.py` from inside `data-prep/`. Each writes to a new `states_output/` folder. |
 
 ## Startup uploads
 
@@ -58,7 +58,7 @@ Upload Status: success, Filename: COCO-2024-Mitigation-Guide.pdf
 
 - **Count:** 41 files today (32 in the democracy folder, 9 in the wildfire folder).
 - **Why it's slow:** the app waits 3 seconds after each file (`upload_to_sage()` in `wildfire_desk.py`), so the uploads alone take about two minutes. The proxy also has to process each file.
-- **Why it repeats:** nothing records which files were already uploaded, so every start sends them all again. The repo does not show whether the proxy skips duplicates.
+- **Why it repeats:** nothing records which files were already uploaded, so every start sends them all again. The proxy keeps one copy of each file, so re-uploading wastes time but doesn't create duplicates. A new upload takes about 20 seconds to become searchable.
 - **Failures are reported:** a failed file prints a `WARNING: upload failed for <name>` line as it happens. The other files keep uploading. When loading finishes, the console lists every file that failed. The app still starts, so answers can be missing that material. Check the console before you rely on the answers.
 
 ## Troubleshooting
@@ -74,6 +74,7 @@ Upload Status: success, Filename: COCO-2024-Mitigation-Guide.pdf
 ## Known issues
 
 - Startup uploads repeat on every run. See above.
+- **The page is not built for phones.** On a phone-width screen, the settings panel takes most of the width and squeezes the chat into a narrow column. Checked on 2026-10-31 at 375×812.
 - **The wildfire documents were missing from the live store and have been re-uploaded.** Before 2026-10-31, session `sage_rag2` held only the organizing documents. On 2026-10-31 all 9 PDFs in `resources/wildfire-resources/` were uploaded again, and each one was confirmed searchable with a targeted question. If wildfire answers ever stop citing these guides, re-check the store first.
 - **What the proxy does, checked on 2026-10-31:**
   - Uploaded documents stay in the store between app restarts.

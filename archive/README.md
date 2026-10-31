@@ -6,7 +6,6 @@ These are kept until the team decides whether to delete them. Once you've confir
 
 | Path | Why it's here |
 | --- | --- |
-| `build/` | An old copy of the LLM proxy client. It has been replaced by `shared/llmproxy/`. |
 | `sage-resources/categorize.py` | Differs from `sage/data-prep/categorize.py`. Which version is current is not known. |
 | `sage-resources/Healthy-Democracy-Sample-Links.html` | Identical to the copy in `sage/data-prep/`. |
 | `sage-resources/question-types.pdf` | Identical to the copy in `sage/data-prep/`. |

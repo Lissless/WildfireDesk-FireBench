@@ -4,19 +4,12 @@ Code that both Sage and CivicBench import.
 
 | Path | What it is |
 | --- | --- |
-| `llmproxy/` | The LLM proxy client. `LLMProxy` sends `generate`, `retrieve`, and `upload_file` requests to the endpoint in your `.env`. It retries on network errors and HTTP 429 and 5xx. |
+| `llmproxy/` | The LLM proxy client. `LLMProxy` sends `generate`, `retrieve`, and `upload_file` requests to the endpoint in your `.env`. It retries on network errors and on HTTP 429 and 5xx responses. |
 | `civic_chatbot.py` | `CivicChatbot`, the base class for any chatbot. Sage, the raw baseline bot, and Orchid all inherit from it. |
-| `pyproject.toml` | Lets the other projects install this folder as a package. |
 
-## Install
+## No install needed
 
-From the repository root, with the venv active:
-
-```bash
-pip install -e ./shared
-```
-
-The `-e` flag installs it in editable mode, so edits here take effect right away. pip downloads `setuptools` during the install, because it is the build tool this package uses.
+You don't install this folder. Each Sage and CivicBench file that uses it adds `shared/` to Python's import path at the top of the file. Keep this folder next to `sage/` and `civicbench/`.
 
 ## Notes
 

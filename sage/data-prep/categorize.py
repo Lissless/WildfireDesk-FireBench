@@ -13,12 +13,25 @@ os.makedirs(output_dir, exist_ok=True)
 
 state_data = defaultdict(list)
 
+
+# splits a location meta like "Seattle, WA", "Seattle,, WA", "Berkeley, CA,, CA" or "MT"
+# into (location, state); the state is always the last non-empty part
+def split_location(meta):
+    parts = [part.strip() for part in meta.split(",") if part.strip()]
+    if not parts:
+        return "", ""
+    state = parts[-1]
+    location_parts = parts[:-1]
+    while location_parts and location_parts[-1] == state:
+        location_parts.pop()
+    return ", ".join(location_parts), state
+
 # Regex updated to capture data-key (URL)
 pattern = re.compile(
     r'data-key="(.*?)".*?'                         # URL
     r'data-lng="(.*?)"\s+data-lat="(.*?)".*?'      # lng, lat
     r'<div class="org-title">(.*?)</div>.*?'       # name
-    r'<div class="org-meta">(.*?),\s*(.*?)</div>'  # location, state
+    r'<div class="org-meta">([^<]*)</div>'         # location meta: "City, ST", sometimes just "ST"
     r'(?:.*?<div class="org-meta"><strong>Category:</strong>\s*(.*?)</div>)?',  # category (optional)
     re.IGNORECASE
 )
@@ -27,14 +40,13 @@ with open(input_file, "r", encoding="utf-8") as f:
     for line in f:
         match = pattern.search(line)
         if match:
-            url = html.unescape(match.group(1).strip())
+            url = html.unescape(match.group(1).strip()).lstrip("|")  # every data-key in the source starts with "|"
             lng = float(match.group(2))
             lat = float(match.group(3))
             org_name = html.unescape(match.group(4).strip())
-            location = html.unescape(match.group(5).strip())
-            state = html.unescape(match.group(6).strip())
+            location, state = split_location(html.unescape(match.group(5)))
 
-            category = match.group(7)
+            category = match.group(6)
             if not category:
                 continue  # skip entries without category
 

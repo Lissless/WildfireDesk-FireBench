@@ -210,6 +210,12 @@ def plot_highclass_chart(sage: dict, base: dict, out_path: str):
 
 
 def main(sage_path: str, base_path: str, rubric_path: str, out_dir: str):
+	for label, path in (('Sage', sage_path), ('baseline', base_path)):
+		if not os.path.exists(path):
+			print(f"Missing {label} judge results: {path}")
+			print("Pass the file with --sage or --base. Baseline results are not included in the repo.")
+			sys.exit(1)
+
 	rubric_data = build_rubric_data(rubric_path)
 	sage_scores = load_scores(sage_path, rubric_data)
 	base_scores = load_scores(base_path, rubric_data)

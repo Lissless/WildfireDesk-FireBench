@@ -20,7 +20,7 @@ if hasattr(sys.stdout, 'reconfigure'):
 	sys.stdout.reconfigure(encoding='utf-8')  # type: ignore[union-attr]
 
 base_dir = str(CIVICBENCH_DIR)
-results_dir = os.path.join(base_dir, 'results')
+results_dir = os.path.join(base_dir, 'results', 'sage')  # where judging/fire_bench_judge.py writes
 default_csv = os.path.join(base_dir, 'data',
 	'civicbench_rubrics.xlsx - Rubric Questions Full.csv')
 
